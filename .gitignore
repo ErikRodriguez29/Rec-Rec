@@ -1,0 +1,11 @@
+*.Rproj.user
+*.Rhistory
+*.RData
+*.Ruserdata
+*.Rproj
+Rplots.pdf
+EDA
+predictions
+tuned_models
+data/facility_counts.csv
+data/facility_counts_nice.csv

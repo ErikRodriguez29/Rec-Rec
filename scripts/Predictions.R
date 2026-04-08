@@ -1,0 +1,554 @@
+library(tidyverse)
+library(tidymodels)
+library(lubridate)
+
+# ==============================
+# WEEK HANDLING
+#==============================
+
+week1_start <- as.Date("2026-01-26")
+today_date <- Sys.Date()
+
+# Current Monday
+current_monday <- today_date -
+  lubridate::wday(today_date, week_start = 1) + 1
+
+# Week 1 Monday
+week1_monday <- week1_start -
+  lubridate::wday(week1_start, week_start = 1) + 1
+
+# Current week number
+current_week <- as.integer(
+  difftime(
+    current_monday,
+    week1_monday,
+    units = "weeks"
+  )
+) + 1
+
+# Next week
+next_week <- current_week + 1
+next_monday <- current_monday + weeks(1)
+
+print(paste(
+  "Current week:", current_week
+))
+
+print(paste(
+  "Predicting Week:", next_week
+))
+
+
+# ==============================
+# LOAD LATEST AVAILABLE MODEL
+# ==============================
+
+# ==============================
+# LOAD LATEST AVAILABLE MODEL
+# ==============================
+
+model_root <- "../tuned_models"
+
+model_dirs <- list.dirs(
+  model_root,
+  recursive = FALSE,
+  full.names = FALSE
+)
+
+# Extract week numbers safely
+week_numbers <- as.numeric(
+  gsub("Week ", "", model_dirs)
+)
+
+# Handle empty directory case
+if (length(week_numbers) == 0 ||
+    all(is.na(week_numbers))) {
+  
+  stop(
+    "No trained models found in ../tuned_models/.
+     Run Training.R first."
+  )
+  
+}
+
+latest_week <- max(week_numbers)
+
+model_path <- paste0(
+  "../tuned_models/Week ",
+  latest_week,
+  "/final_attendance_workflow.rds"
+)
+
+rf_final_fit_train_ts <- readRDS(model_path)
+
+print(paste(
+  "Loaded model from Week",
+  latest_week
+))
+
+
+# ==============================
+# LOAD TRAINING DATA STRUCTURE
+# (needed to rebuild schedule)
+# ==============================
+
+attendance_raw <- read_csv(
+  "../data/facility_counts.csv"
+)
+
+days_of_week <- c("M","T","W","R","F","S","U")
+
+
+# ==============================
+# PREDICTION SAVE DIRECTORY
+# ==============================
+
+save_path <- paste0(
+  "../predictions/Week ",
+  next_week,
+  "/"
+)
+
+if (!dir.exists(save_path)) {
+  dir.create(save_path,
+             recursive = TRUE)
+}
+
+# ------------------------------
+# Rebuild facility schedule
+# ------------------------------
+
+facility_capacities <- attendance_raw %>%
+  distinct(facility_name, total_capacity)
+
+
+# ---- Define facility groups ----
+
+pool_hours_facilities <- c(
+  "Small Pool",
+  "Big Pool",
+  "Spa",
+  "Pool Deck"
+)
+
+climb_center_facility <- c(
+  "Climbing Center - MAC"
+)
+
+
+# ---- Hour definitions ----
+
+standard_hours_m_r <- 6:22
+standard_hours_f   <- 6:20
+standard_hours_s   <- 9:20
+standard_hours_u   <- 9:20
+
+pool_hours_m_f <- 6:19
+pool_hours_s_u <- 9:19
+
+climb_hours_m_r <- 11:21
+climb_hours_f_u <- 11:20
+
+
+# ==============================
+# BUILD COMBINATION SCHEDULE
+# ==============================
+
+all_combinations <- expand.grid(
+  facility_name = unique(attendance_raw$facility_name),
+  day_of_week = factor(days_of_week),
+  hour = 0:23
+)
+
+combination_schedule <- all_combinations %>%
+  filter(
+    (facility_name %in% pool_hours_facilities & (
+      (day_of_week %in% c("M","T","W","R","F") &
+         hour %in% pool_hours_m_f) |
+        (day_of_week %in% c("S","U") &
+           hour %in% pool_hours_s_u)
+    )) |
+      
+      (facility_name %in% climb_center_facility & (
+        (day_of_week %in% c("M","T","W","R") &
+           hour %in% climb_hours_m_r) |
+          (day_of_week %in% c("F","S","U") &
+             hour %in% climb_hours_f_u)
+      )) |
+      
+      (!(facility_name %in%
+           c(pool_hours_facilities,
+             climb_center_facility)) & (
+               
+               (day_of_week %in% c("M","T","W","R") &
+                  hour %in% standard_hours_m_r) |
+                 
+                 (day_of_week == "F" &
+                    hour %in% standard_hours_f) |
+                 
+                 (day_of_week == "S" &
+                    hour %in% standard_hours_s) |
+                 
+                 (day_of_week == "U" &
+                    hour %in% standard_hours_u)
+               
+             ))
+  ) %>%
+  filter(facility_name != "Racquetball Court 5") %>%
+  left_join(
+    facility_capacities,
+    by = "facility_name"
+  )
+
+
+# ==============================
+# BUILD NEXT-WEEK TIMESTAMPS
+# ==============================
+
+forecast_data <- combination_schedule %>%
+  mutate(
+    
+    timestamp =
+      next_monday +
+      days(match(day_of_week,
+                 days_of_week) - 1) +
+      hours(hour),
+    
+    facility_name =
+      factor(facility_name),
+    
+    day_of_week =
+      factor(day_of_week,
+             levels = days_of_week),
+  )
+
+
+# ==============================
+# MAKE PREDICTIONS
+# ==============================
+
+forecast_predictions <-
+  predict(
+    rf_final_fit_train_ts,
+    new_data = forecast_data
+  ) %>%
+  bind_cols(forecast_data) %>%
+  mutate(
+    predicted_count =
+      pmax(0, round(.pred)),
+    
+    percentage_filled =
+      (predicted_count /
+         total_capacity) * 100,
+    
+    # FORMAT TIMESTAMP
+    timestamp = format(timestamp, "%Y-%m-%d %H:%M:%S")
+  )
+
+
+# ==============================
+# MAIN FACILITY FORECAST PLOT
+# ==============================
+
+forecast_plot <-
+  forecast_predictions %>%
+  group_by(
+    facility_name,
+    day_of_week,
+    hour
+  ) %>%
+  summarize(
+    avg_pct =
+      mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(
+    aes(
+      x = hour,
+      y = day_of_week,
+      fill = avg_pct
+    )
+  ) +
+  geom_tile(color="gray") +
+  scale_fill_gradient2(
+    low="darkgreen",
+    mid="yellow",
+    high="darkred",
+    midpoint=50,
+    limits=c(0,100)
+  ) +
+  facet_wrap(~facility_name) +
+  labs(
+    title =
+      paste(
+        "Weekly Forecast — Week",
+        next_week
+      ),
+    x="Hour",
+    y="Day"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid=element_blank(),
+    strip.text=
+      element_text(face="bold")
+  )
+
+ggsave(
+  filename =
+    "1All Facilities Forecast.png",
+  plot = forecast_plot,
+  path = save_path,
+  width = 16,
+  height = 11
+)
+
+write_csv(
+  forecast_predictions %>%
+    mutate(
+      percentage_filled =
+        sprintf("%.2f", percentage_filled)
+    ),
+  paste0(
+    save_path,
+    "forecast_values.csv"
+  )
+)
+
+# ==============================
+# FACILITY CATEGORIES
+# ==============================
+
+facilities_to_include <- c(
+  "FC 1 - South Room",
+  "FC 1- North Room",
+  "FC 2 - 1st floor",
+  "FC 2- Mezzanine",
+  "FC 3 - MAC",
+  "MAC Court",
+  "Main Gym Court 1 (North)",
+  "Main Gym Court 2 (South)"
+)
+
+racquetball_facilities <- c(
+  "Racquetball Court 1",
+  "Racquetball Court 2",
+  "Racquetball Court 3",
+  "Racquetball Court 4",
+  "Squash Court 1"
+)
+
+remaining_facilities <- c(
+  "Outdoor Fitness 1",
+  "Outdoor Fitness 2",
+  "Galleria",
+  "Pavilion Court 1 (West)",
+  "Pavilion Court 2 (East)"
+)
+
+# ==============================
+# CATEGORICAL FACILITIES PLOTS
+# ==============================
+
+frequented_plot <-
+  forecast_predictions %>%
+  filter(facility_name %in% facilities_to_include) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(
+    avg_pct = mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(hour, day_of_week, fill = avg_pct)) +
+  geom_tile(color = "gray") +
+  scale_fill_gradient2(
+    low="darkgreen",
+    mid="yellow",
+    high="darkred",
+    midpoint=50,
+    limits=c(0,100)
+  ) +
+  facet_wrap(~ facility_name) +
+  labs(
+    title = paste(
+      "Frequented Facilities Forecast — Week",
+      next_week
+    ),
+    x="Hour",
+    y="Day"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid=element_blank(),
+    strip.text=element_text(face="bold")
+  )
+
+ggsave(
+  "2Frequented Facilities Forecast.png",
+  frequented_plot,
+  path = save_path,
+  width = 16,
+  height = 11
+)
+
+
+
+
+pool_plot <-
+  forecast_predictions %>%
+  filter(facility_name %in% pool_hours_facilities) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(
+    avg_pct = mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(hour, day_of_week, fill = avg_pct)) +
+  geom_tile(color="gray") +
+  scale_fill_gradient2(
+    low="darkgreen",
+    mid="yellow",
+    high="darkred",
+    midpoint=50,
+    limits=c(0,100)
+  ) +
+  facet_wrap(~ facility_name) +
+  labs(
+    title = paste(
+      "Pool Facilities Forecast — Week",
+      next_week
+    )
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid=element_blank(),
+    strip.text=element_text(face="bold")
+  )
+
+ggsave(
+  "3Pool Facilities Forecast.png",
+  pool_plot,
+  path = save_path,
+  width = 16,
+  height = 11
+)
+
+
+
+
+climb_plot <-
+  forecast_predictions %>%
+  filter(facility_name %in% climb_center_facility) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(
+    avg_pct = mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(hour, day_of_week, fill = avg_pct)) +
+  geom_tile(color="gray") +
+  scale_fill_gradient2(
+    low="darkgreen",
+    mid="yellow",
+    high="darkred",
+    midpoint=50,
+    limits=c(0,100)
+  ) +
+  facet_wrap(~ facility_name) +
+  labs(
+    title = paste(
+      "Climbing Center Forecast — Week",
+      next_week
+    )
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid=element_blank()
+  )
+
+ggsave(
+  "4Climbing Center Forecast.png",
+  climb_plot,
+  path = save_path,
+  width = 8,
+  height = 6
+)
+
+
+
+racquetball_plot <-
+  forecast_predictions %>%
+  filter(facility_name %in% racquetball_facilities) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(
+    avg_pct = mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(hour, day_of_week, fill = avg_pct)) +
+  geom_tile(color="gray") +
+  scale_fill_gradient2(
+    low="darkgreen",
+    mid="yellow",
+    high="darkred",
+    midpoint=50,
+    limits=c(0,100)
+  ) +
+  facet_wrap(~ facility_name) +
+  labs(
+    title = paste(
+      "Racquetball & Squash Forecast — Week",
+      next_week
+    )
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid=element_blank()
+  )
+
+ggsave(
+  "5Racquetball Forecast.png",
+  racquetball_plot,
+  path = save_path,
+  width = 12,
+  height = 8
+)
+
+
+
+remaining_plot <-
+  forecast_predictions %>%
+  filter(facility_name %in% remaining_facilities) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(
+    avg_pct = mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(hour, day_of_week, fill = avg_pct)) +
+  geom_tile(color="gray") +
+  scale_fill_gradient2(
+    low="darkgreen",
+    mid="yellow",
+    high="darkred",
+    midpoint=50,
+    limits=c(0,100)
+  ) +
+  facet_wrap(~ facility_name) +
+  labs(
+    title = paste(
+      "Remaining Facilities Forecast — Week",
+      next_week
+    )
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid=element_blank()
+  )
+
+ggsave(
+  "6Remaining Facilities Forecast.png",
+  remaining_plot,
+  path = save_path,
+  width = 12,
+  height = 6
+)
+
+print("Predictions Complete")
+print(paste("Saved predictions to:", save_path))
+print(paste("Forecast week begins:", next_monday))
