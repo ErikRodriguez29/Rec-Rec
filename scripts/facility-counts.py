@@ -9,6 +9,9 @@ import requests
 URL = "https://goboardapi.azurewebsites.net/api/FacilityCount/GetCountsByAccount?AccountAPIKey=9ff6a29d-9ef2-4d75-97ea-187f31ac0025"
 CSV_FILE = "facility_counts.csv"
 INTERVAL_SECONDS = 5 * 60 # Every 5 Minutes
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+OPEN_METEO_LATITUDE = 34.4140
+OPEN_METEO_LONGITUDE = -119.8489 # UCSB Coordinates
 
 
 def parse_api_timestamp(value: object) -> datetime | None:
@@ -33,7 +36,47 @@ def get_json(url):
     return response.json(), response.headers.get("content-type", "")
 
 
-def scrape_facility_counts(data):
+def get_open_meteo_is_raining() -> bool | None:
+    """
+    Returns whether Open-Meteo's weather_code indicates precipitation (drizzle+),
+    i.e. weather_code >= 51 (drizzle, rain, freezing rain, snow, showers, etc.).
+    None means we couldn't determine it (network/API error).
+    """
+    # Weather code: 51–67 drizzle/rain; higher codes include snow, showers, thunderstorms.
+    WMO_PRECIP_THRESHOLD = 51
+    params = {
+        "latitude": OPEN_METEO_LATITUDE,
+        "longitude": OPEN_METEO_LONGITUDE,
+        "current": "weather_code",
+        "timezone": "UTC",
+    }
+    for attempt in range(2):
+        try:
+            response = requests.get(
+                OPEN_METEO_URL,
+                params=params,
+                timeout=30,
+                headers={"Accept": "application/json,*/*;q=0.8"},
+            )
+            response.raise_for_status()
+            payload = response.json()
+            current = payload.get("current") if isinstance(payload, dict) else None
+            if not isinstance(current, dict):
+                return None
+            code = current.get("weather_code")
+            try:
+                code_int = int(float(code))
+            except (TypeError, ValueError):
+                return None
+            return code_int >= WMO_PRECIP_THRESHOLD
+        except Exception:
+            if attempt == 0:
+                time.sleep(1)
+                continue
+            return None
+
+
+def scrape_facility_counts(data, *, is_raining: bool | None):
     facilities = []
 
     if isinstance(data, dict):
@@ -91,7 +134,8 @@ def scrape_facility_counts(data):
             'total_capacity': str(total_capacity),
             'percentage_filled': percentage_filled_str,
             'timestamp': formatted_timestamp,
-            'day_of_week': day_of_week
+            'day_of_week': day_of_week,
+            'is_raining': is_raining
         })
     
     return facilities
@@ -135,8 +179,8 @@ def save_to_csv(facilities, filename=CSV_FILE):
         deduped.append(row)
     
     with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['facility_name', 'current_count', 'total_capacity', 'percentage_filled', 'timestamp', 'day_of_week']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        fieldnames = ['facility_name', 'current_count', 'total_capacity', 'percentage_filled', 'timestamp', 'day_of_week', 'is_raining']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
         if not file_exists: 
             writer.writeheader()
         writer.writerows(deduped)
@@ -148,13 +192,14 @@ def main():
     while True:
         try:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Scraping...")
+            is_raining = get_open_meteo_is_raining()
             data, content_type = get_json(URL)
 
             # Save raw JSON for debugging
             with open("raw.json", "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            facilities = scrape_facility_counts(data)
+            facilities = scrape_facility_counts(data, is_raining=is_raining)
             
             if facilities:
                 save_to_csv(facilities)

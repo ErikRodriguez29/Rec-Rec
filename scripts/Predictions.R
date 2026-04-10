@@ -38,11 +38,6 @@ print(paste(
   "Predicting Week:", next_week
 ))
 
-
-# ==============================
-# LOAD LATEST AVAILABLE MODEL
-# ==============================
-
 # ==============================
 # LOAD LATEST AVAILABLE MODEL
 # ==============================
@@ -219,9 +214,47 @@ forecast_data <- combination_schedule %>%
     
     day_of_week =
       factor(day_of_week,
-             levels = days_of_week),
+             levels = days_of_week)
   )
 
+# Augment true forecast rain values from the open meteo API
+library(httr2)
+
+# Fetch weather data for UCSB (located 34.4140, -119.8489)
+forecast_start <- as.Date(next_monday)
+forecast_end   <- forecast_start + days(6)
+
+req <- request("https://api.open-meteo.com/v1/forecast") %>%
+  req_url_query(
+    latitude = 34.41, 
+    longitude = -119.84,
+    hourly = "weather_code",
+    start_date = as.character(forecast_start),
+    end_date = as.character(forecast_end),
+    timezone = "auto"
+  )
+
+# Perform request and parse JSON
+resp <- req %>% 
+  req_perform() %>% 
+  resp_body_json()
+
+# Convert JSON arrays into a tidy data frame
+weather_data <- tibble(
+  datetime = ymd_hm(unlist(resp$hourly$time)),
+  w_code = unlist(resp$hourly$weather_code)
+)
+
+# Augment to forecast_data
+forecast_data <- forecast_data %>%
+  mutate(timestamp = with_tz(timestamp, tzone = "America/Los_Angeles")) %>%
+  left_join(weather_data, by = c("timestamp" = "datetime")) %>%
+  mutate(
+    # Weather code >= 51 includes all types of rain/snow
+    is_raining = replace_na(w_code, 0) >= 51,
+    is_raining = factor(is_raining, levels = c(FALSE, TRUE))
+  ) %>%
+  select(-w_code)
 
 # ==============================
 # MAKE PREDICTIONS
@@ -242,8 +275,10 @@ forecast_predictions <-
          total_capacity) * 100,
     
     # FORMAT TIMESTAMP
-    timestamp = format(timestamp, "%Y-%m-%d %H:%M:%S")
-  )
+    timestamp = format(timestamp, "%Y-%m-%d %H:%M:%S"),
+    is_raining = as.logical(as.character(is_raining))
+  ) %>%
+  select(-.pred)
 
 
 # ==============================

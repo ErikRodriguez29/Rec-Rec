@@ -58,7 +58,8 @@ attendance <- attendance_raw %>%
     hour = hour(timestamp),
     # Label day of the week from Monday through Sunday
     day_of_week = factor(day_of_week, levels = 0:6, labels = days_of_week),
-    facility_name = factor(facility_name)
+    facility_name = factor(facility_name),
+    is_raining = factor(is_raining)
   ) %>%
   # Arrange all observations alphabetically and by ascending timestamp
   arrange(facility_name, timestamp)
@@ -225,15 +226,17 @@ ts_folds <- time_series_cv(
   date_var   = timestamp,
   assess     = "1 week",   # each fold's assessment window
   initial    = "16 days",  # minimum training window per fold
-  slice_limit = 4,         # number of folds
+  skip       = "1 week",
+  slice_limit = 10,         # number of folds
   cumulative = TRUE
 )
 
 
 attendance_recipe_ts <- recipe(
-  current_count ~ hour + day_of_week + facility_name,
+  current_count ~ hour + day_of_week + facility_name + is_raining,
   data = train_data_ts
 ) %>%
+  step_unknown(is_raining) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_zv(all_predictors()) %>%
   step_normalize(all_numeric_predictors())
@@ -292,7 +295,11 @@ race_results <- model_set %>%
   )
 
 # Results & Best Model
-autoplot(race_results)
+ggsave(
+  filename = "race_results_autoplot.png",
+  plot = autoplot(race_results),
+  path = model_dir
+)
 best_results <- race_results %>% 
   extract_workflow_set_result("base_rec_boosted") %>% 
   select_best(metric = "rmse")

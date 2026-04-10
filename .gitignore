@@ -7,5 +7,9 @@ Rplots.pdf
 EDA
 predictions
 tuned_models
-data/facility_counts.csv
-data/facility_counts_nice.csv
+data
+*__pycache__*
+*.bak
+raw.json
+.Rproj.user
+.env
