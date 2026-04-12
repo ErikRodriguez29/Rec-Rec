@@ -219,31 +219,49 @@ forecast_data <- combination_schedule %>%
 
 # Augment true forecast rain values from the open meteo API
 library(httr2)
+library(fs)
 
-# Fetch weather data for UCSB (located 34.4140, -119.8489)
 forecast_start <- as.Date(next_monday)
 forecast_end   <- forecast_start + days(6)
 
-req <- request("https://api.open-meteo.com/v1/forecast") %>%
-  req_url_query(
-    latitude = 34.41, 
-    longitude = -119.84,
-    hourly = "weather_code",
-    start_date = as.character(forecast_start),
-    end_date = as.character(forecast_end),
-    timezone = "auto"
+# Save the weather into a cache file so that we don't have to make API calls
+# for an already existing week
+cache_file <- paste0("cached_weather_week_", next_week, ".rds")
+
+if (file_exists(cache_file)) {
+  # Load existing data if it exists
+  message(paste0("Using cached weather data from Week ", next_week))
+  weather_data <- readRDS(cache_file)
+} else {
+  # Fetch weather data for UCSB (located 34.4140, -119.8489)
+  forecast_start <- as.Date(next_monday)
+  forecast_end   <- forecast_start + days(6)
+  
+  req <- request("https://api.open-meteo.com/v1/forecast") %>%
+    req_url_query(
+      latitude = 34.4140, 
+      longitude = -119.8489,
+      hourly = "weather_code",
+      start_date = as.character(forecast_start),
+      end_date = as.character(forecast_end),
+      timezone = "auto"
+    )
+  
+  # Perform request and parse JSON
+  resp <- req %>% 
+    req_perform() %>% 
+    resp_body_json()
+  
+  # Convert JSON arrays into a tidy data frame
+  weather_data <- tibble(
+    datetime = ymd_hm(unlist(resp$hourly$time)),
+    w_code = unlist(resp$hourly$weather_code)
   )
+  
+  saveRDS(weather_data, cache_file)
+}
 
-# Perform request and parse JSON
-resp <- req %>% 
-  req_perform() %>% 
-  resp_body_json()
 
-# Convert JSON arrays into a tidy data frame
-weather_data <- tibble(
-  datetime = ymd_hm(unlist(resp$hourly$time)),
-  w_code = unlist(resp$hourly$weather_code)
-)
 
 # Augment to forecast_data
 forecast_data <- forecast_data %>%

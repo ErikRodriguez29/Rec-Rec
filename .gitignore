@@ -13,3 +13,4 @@ data
 raw.json
 .Rproj.user
 .env
+cache*
