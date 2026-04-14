@@ -226,7 +226,13 @@ forecast_end   <- forecast_start + days(6)
 
 # Save the weather into a cache file so that we don't have to make API calls
 # for an already existing week
-cache_file <- paste0("cached_weather_week_", next_week, ".rds")
+weather_dir <- "../data/weather_data"
+
+if (!dir.exists(weather_dir)) {
+  dir.create(weather_dir, recursive = TRUE)
+}
+
+cache_file <- paste0("../data/weather_data/cached_weather_week_", next_week, ".rds")
 
 if (file_exists(cache_file)) {
   # Load existing data if it exists
