@@ -200,21 +200,19 @@ combination_schedule <- all_combinations %>%
 # BUILD NEXT-WEEK TIMESTAMPS
 # ==============================
 
+# Ensure the correct timezone is used for proper hour calculations in 
+# predictions dataset
+next_monday_dt <- as_datetime(next_monday, tz = "America/Los_Angeles")
+
 forecast_data <- combination_schedule %>%
   mutate(
-    
     timestamp =
-      next_monday +
-      days(match(day_of_week,
-                 days_of_week) - 1) +
+      next_monday_dt +
+      days(match(day_of_week, days_of_week) - 1) +
       hours(hour),
     
-    facility_name =
-      factor(facility_name),
-    
-    day_of_week =
-      factor(day_of_week,
-             levels = days_of_week)
+    facility_name = factor(facility_name),
+    day_of_week = factor(day_of_week, levels = days_of_week)
   )
 
 # Augment true forecast rain values from the open meteo API
