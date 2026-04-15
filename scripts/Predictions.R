@@ -214,10 +214,100 @@ forecast_data <- combination_schedule %>%
     facility_name = factor(facility_name),
     day_of_week = factor(day_of_week, levels = days_of_week)
   )
+# ==============================
+# BUILD CURRENT-WEEK TIMESTAMPS
+# ==============================
 
-# Augment true forecast rain values from the open meteo API
+current_monday_dt <- as_datetime(current_monday, tz = "America/Los_Angeles")
+
+current_week_data <- combination_schedule %>%
+  mutate(
+    timestamp =
+      current_monday_dt +
+      days(match(day_of_week, days_of_week) - 1) +
+      hours(hour),
+    
+    facility_name = factor(facility_name),
+    day_of_week = factor(day_of_week, levels = days_of_week)
+  )
+
+# ==============================
+# CURRENT WEEK WEATHER
+# ==============================
 library(httr2)
 library(fs)
+
+current_forecast_start <- as.Date(current_monday)
+current_forecast_end   <- current_forecast_start + days(6)
+
+current_cache_file <- paste0(
+  "../data/weather_data/cached_weather_week_",
+  current_week,
+  ".rds"
+)
+
+if (file_exists(current_cache_file)) {
+  
+  message(paste0(
+    "Using cached weather data from Week ",
+    current_week
+  ))
+  
+  current_weather_data <- readRDS(current_cache_file)
+  
+} else {
+  
+  req <- request("https://api.open-meteo.com/v1/forecast") %>%
+    req_url_query(
+      latitude = 34.4140,
+      longitude = -119.8489,
+      hourly = "weather_code",
+      start_date = as.character(current_forecast_start),
+      end_date = as.character(current_forecast_end),
+      timezone = "auto"
+    )
+  
+  resp <- req %>%
+    req_perform() %>%
+    resp_body_json()
+  
+  current_weather_data <- tibble(
+    datetime = ymd_hm(unlist(resp$hourly$time)),
+    w_code = unlist(resp$hourly$weather_code)
+  )
+  
+  saveRDS(
+    current_weather_data,
+    current_cache_file
+  )
+}
+
+current_week_data <- current_week_data %>%
+  mutate(
+    timestamp =
+      with_tz(
+        timestamp,
+        tzone = "America/Los_Angeles"
+      )
+  ) %>%
+  left_join(
+    current_weather_data,
+    by = c("timestamp" = "datetime")
+  ) %>%
+  mutate(
+    is_raining =
+      replace_na(w_code, 0) >= 51,
+    is_raining =
+      factor(is_raining, levels = c(FALSE, TRUE))
+  ) %>%
+  select(-w_code)
+
+
+# ==============================
+# NEXT WEEK WEATHER
+# ==============================
+
+# Augment true forecast rain values from the open meteo API
 
 forecast_start <- as.Date(next_monday)
 forecast_end   <- forecast_start + days(6)
@@ -279,7 +369,35 @@ forecast_data <- forecast_data %>%
   select(-w_code)
 
 # ==============================
-# MAKE PREDICTIONS
+# CURRENT WEEK PREDICTIONS
+# ==============================
+current_predictions <-
+  predict(
+    rf_final_fit_train_ts,
+    new_data = current_week_data
+  ) %>%
+  bind_cols(current_week_data) %>%
+  mutate(
+    predicted_count =
+      pmax(0, round(.pred)),
+    
+    percentage_filled =
+      (predicted_count /
+         total_capacity) * 100,
+    
+    timestamp =
+      format(
+        timestamp,
+        "%Y-%m-%d %H:%M:%S"
+      ),
+    
+    is_raining =
+      as.logical(as.character(is_raining))
+  ) %>%
+  select(-.pred)
+
+# ==============================
+# NEXT WEEK PREDICTIONS
 # ==============================
 
 forecast_predictions <-
@@ -368,6 +486,35 @@ write_csv(
     ),
   paste0(
     save_path,
+    "forecast_values.csv"
+  )
+)
+
+# ==============================
+# SAVE CURRENT WEEK CSV ONLY
+# ==============================
+
+current_save_path <- paste0(
+  "../predictions/Week ",
+  current_week,
+  "/"
+)
+
+if (!dir.exists(current_save_path)) {
+  dir.create(
+    current_save_path,
+    recursive = TRUE
+  )
+}
+
+write_csv(
+  current_predictions %>%
+    mutate(
+      percentage_filled =
+        sprintf("%.2f", percentage_filled)
+    ),
+  paste0(
+    current_save_path,
     "forecast_values.csv"
   )
 )
