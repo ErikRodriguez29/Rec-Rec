@@ -369,6 +369,45 @@ forecast_data <- forecast_data %>%
   select(-w_code)
 
 # ==============================
+# EXERCISE CATEGORIES
+# ==============================
+# Adds two columns to the predictions, a list of exercise categories and
+# a list of activities corresponding to each category, describing what
+# machines/exercises achieve each. Each category, activity list pair is
+# unique to each facility.
+exercise_categories <- tribble(
+  ~facility_name, ~categories, ~activities,
+  "Racquetball Court 1", c("cardio"), c("racquetball"),
+  "Racquetball Court 2", c("cardio"), c("racquetball"),
+  "Racquetball Court 3", c("cardio"), c("racquetball"),
+  "Racquetball Court 4", c("cardio"), c("racquetball"),
+  "Squash Court 1", c("cardio"), c("squash"),
+  "Galleria", c("cardio", "legs"), c("treadmills", "stairmasters (stair machines)", "ellipticals (precor branded machines)"),
+  "Main Gym Court 1 (North)", c("cardio"), c("basketball"),
+  "Main Gym Court 2 (South)", c("cardio"), c("basketball"),
+  "Outdoor Fitness 1 (Turf, Free Weights, Benches)", c("weight training", "arms", "legs", "core", "cardio"), c("weight lifting", "benching", "bike machines"),
+  "Pavilion Court 1 (West)", c("cardio"), c("badminton"),
+  "Pavilion Court 2 (East)", c("cardio"), c("badminton"),
+  "Outdoor Fitness 2 (Behind Pottery)", c("cardio"), c("ellipticals (precor branded machines)", "bike machines"),
+  "FC 1- North Room", c("weight training", "arms", "legs", "core"), c("weight lifting", "arm machines", "leg presses", "core machines"),
+  "FC 1 - South Room", c("weight training", "arms", "legs", "core"), c("weight lifting", "arm machines", "leg presses", "core machines"),
+  "FC 2 - 1st floor", c("cardio", "weight training", "legs", "core"), c("weight lifting", "treadmills", "stairmasters", "weight crunch machines", "arm & leg machines"),
+  "FC 2- Mezzanine", c("cardio", "legs"), c("treadmills", "ellipticals (precor branded machines)"),
+  "FC 3 - MAC", c("cardio", "weight training", "arms", "legs", "core"), c("treadmills", "weight lifting", "arm machines", "leg presses", "weight crunch machines"),
+  "MAC Court", c("NA"), c("hockey", "skating"), # Idk why this is included in facility counts lol
+  "Spa", c("NA"), c("NA"),                      # Same with this bruh
+  "Small Pool", c("cardio"), c("swimming"),
+  "Big Pool", c("cardio"), c("swimming"),
+  "Pool Deck", c("NA"), c("NA"),                # Or this
+  "Climbing Center - MAC", c("NA"), c("climbing")
+)
+
+exercise_categories <- exercise_categories %>%
+  mutate(
+    facility_name = str_trim(facility_name)
+  )
+
+# ==============================
 # CURRENT WEEK PREDICTIONS
 # ==============================
 current_predictions <-
@@ -394,7 +433,12 @@ current_predictions <-
     is_raining =
       as.logical(as.character(is_raining))
   ) %>%
-  select(-.pred)
+  select(-.pred) %>%
+  left_join(exercise_categories, by = "facility_name") %>%
+  mutate(
+    categories = map_chr(categories, paste, collapse = "; "),
+    activities = map_chr(activities, paste, collapse = "; ")
+  )
 
 # ==============================
 # NEXT WEEK PREDICTIONS
@@ -418,7 +462,12 @@ forecast_predictions <-
     timestamp = format(timestamp, "%Y-%m-%d %H:%M:%S"),
     is_raining = as.logical(as.character(is_raining))
   ) %>%
-  select(-.pred)
+  select(-.pred) %>%
+  left_join(exercise_categories, by = "facility_name") %>%
+  mutate(
+    categories = map_chr(categories, paste, collapse = "; "),
+    activities = map_chr(activities, paste, collapse = "; ")
+  )
 
 
 # ==============================
