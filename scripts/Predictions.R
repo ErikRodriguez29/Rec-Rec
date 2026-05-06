@@ -436,6 +436,18 @@ current_predictions <-
   select(-.pred) %>%
   left_join(exercise_categories, by = "facility_name") %>%
   mutate(
+    # We want to augment a new column is_outdoor_facility which describes whether the
+    # facility is outdoors (this includes the outdoor fitness courts and the pool facilities).
+    # These will have infinite weights when is_raining is true at the corresponding row.
+    is_outdoor_facility = case_when(
+      facility_name == "Outdoor Fitness 1" ~ TRUE,
+      facility_name == "Outdoor Fitness 2" ~ TRUE,
+      facility_name == "Spa" ~ TRUE,
+      facility_name == "Small Pool" ~ TRUE,
+      facility_name == "Big Pool" ~ TRUE,
+      facility_name == "Pool Deck" ~ TRUE,
+      TRUE ~ FALSE
+    ),
     categories = map_chr(categories, paste, collapse = "; "),
     activities = map_chr(activities, paste, collapse = "; ")
   )
@@ -465,6 +477,18 @@ forecast_predictions <-
   select(-.pred) %>%
   left_join(exercise_categories, by = "facility_name") %>%
   mutate(
+    # We want to augment a new column is_outdoor_facility which describes whether the
+    # facility is outdoors (this includes the outdoor fitness courts and the pool facilities).
+    # These will have infinite weights when is_raining is true at the corresponding row.
+    is_outdoor_facility = case_when(
+      facility_name == "Outdoor Fitness 1" ~ TRUE,
+      facility_name == "Outdoor Fitness 2" ~ TRUE,
+      facility_name == "Spa" ~ TRUE,
+      facility_name == "Small Pool" ~ TRUE,
+      facility_name == "Big Pool" ~ TRUE,
+      facility_name == "Pool Deck" ~ TRUE,
+      TRUE ~ FALSE
+    ),
     categories = map_chr(categories, paste, collapse = "; "),
     activities = map_chr(activities, paste, collapse = "; ")
   )
