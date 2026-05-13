@@ -14,3 +14,5 @@ raw.json
 .Rproj.user
 .env
 cache*
+.pytest_cache*
+.ruff_cache*
