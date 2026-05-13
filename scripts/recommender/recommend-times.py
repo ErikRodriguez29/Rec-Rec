@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 import pandas as pd
-
+import os
 
 
 
@@ -278,8 +278,70 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     # Return the current and next week recommendations
     return current_week_recommendations, next_week_recommendations
 
-# TODO: Output formatting functions
+# Output formatting functions
 
+
+# Format the recommendations
+def format_recommendations(df):
+    day_to_name = {
+        "M": "Monday",
+        "T": "Tuesday",
+        "W": "Wednesday",
+        "R": "Thursday",
+        "F": "Friday",
+        "S": "Saturday",
+        "U": "Sunday",
+    }
+    day_order = ["M", "T", "W", "R", "F", "S", "U"]
+
+    def hour_to_ampm(h):
+        # Convert the hour to AM/PM format
+        if h == 0: return "12:00 AM"
+        if 1 <= h <= 11: return f"{h}:00 AM"
+        if h == 12: return "12:00 PM"
+        return f"{h - 12}:00 PM"
+
+    output = []
+    # Group by activity or exercise category and iterate through each group
+    grouped = df.groupby("optimized_activity_or_exercise_category")
+    for category in sorted(grouped.groups.keys()):
+        group = grouped.get_group(category)
+        # Recommendations for this activity or exercise category
+        output.append(f"Recommendations for {category}:")
+        output.append(f"--------------------------------")
+        for day_code in day_order:
+            # Recommendations for this day
+            day_rows = group[group["day_of_week"] == day_code]
+            if day_rows.empty:
+                continue
+            # Recommendations for this facility
+            for facility_name, fac_rows in day_rows.groupby("facility_name", sort=True):
+                fac_rows = fac_rows.sort_values(by="hour")
+                # Get the times for this facility and format them
+                times = [hour_to_ampm(int(hour)) for hour in fac_rows["hour"]]
+                time_part = " or ".join(f"at {time}" for time in times)
+                # Add the recommendation for this facility to the output string
+                output.append(
+                    f"On {day_to_name[day_code]} go to {facility_name} {time_part}"
+                )
+        # Separate the recommendations for this activity or exercise category
+        output.append(f"\n\n")
+    return "\n".join(output)
+
+def format_recommendations_to_print(current_week_recommendations, next_week_recommendations):
+    formatted_current_week_recommendations = format_recommendations(current_week_recommendations)
+    formatted_next_week_recommendations = format_recommendations(next_week_recommendations)
+    output = ""
+    output += "="*50 + "\n"
+    output += "CURRENT WEEK RECOMMENDATIONS:\n"
+    output += "="*50 + "\n"
+    output += formatted_current_week_recommendations + "\n"
+    output += "="*50 + "\n"
+    output += "NEXT WEEK RECOMMENDATIONS:\n"
+    output += "="*50 + "\n"
+    output += formatted_next_week_recommendations + "\n"
+    output += "="*50 + "\n"
+    return output
 
 def main():
     current_week_number, next_week_number = get_current_next_week_numbers()
@@ -296,10 +358,18 @@ def main():
     print(f"Recommended times saved to CSV files")
 
     # print the recommendations by facility name, day of the week, and hour
-    print(f"Current week recommendations by facility name, day of the week, and hour:")
-    print(current_week_recommendations.groupby(["facility_name", "day_of_week", "hour"]).size().reset_index(name="count"), end = "\n\n")
-    print(f"Next week recommendations by facility name, day of the week, and hour:")
-    print(next_week_recommendations.groupby(["facility_name", "day_of_week", "hour"]).size().reset_index(name="count"))
+    # print(f"Current week recommendations by facility name, day of the week, and hour:")
+    # print(current_week_recommendations.groupby(["facility_name", "day_of_week", "hour"]).size().reset_index(name="count"), end = "\n\n")
+    # print(f"Next week recommendations by facility name, day of the week, and hour:")
+    # print(next_week_recommendations.groupby(["facility_name", "day_of_week", "hour"]).size().reset_index(name="count"))
+
+    # Print the set of formatted recommendations
+    formatted_recommendations_to_print = format_recommendations_to_print(current_week_recommendations, next_week_recommendations)
+    print(formatted_recommendations_to_print)
+
+    # Save the formatted recommendations to a text file
+    with open("recommendations.txt", "w") as f:
+        f.write(formatted_recommendations_to_print)
 
 if __name__ == "__main__":
     main()

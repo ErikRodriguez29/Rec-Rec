@@ -16,3 +16,4 @@ raw.json
 cache*
 .pytest_cache*
 .ruff_cache*
+recommendations.txt
