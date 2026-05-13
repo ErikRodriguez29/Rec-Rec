@@ -1,6 +1,5 @@
 from datetime import date, datetime, timedelta
 import pandas as pd
-from paretoset import paretoset
 
 
 
@@ -52,7 +51,7 @@ def get_user_preferred_activities_and_exercise_categories():
     # input_exercise_categories = input("Enter the exercise categories you are interested in (comma separated): ").lower().strip().split(",")
     # input_activities = input("Enter the activities you are interested in (comma separated): ").lower().strip().split(",")
     # return set(input_activities), set(input_exercise_categories)
-    return set(["climbing"]), set(["arms"])
+    return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
 
 
 # Get the user's preferred hours to go to the gym
@@ -77,6 +76,7 @@ def get_user_unavailable_days_hours():
     # return output
     return [("T", (10, 12)), ("W", (10, 12)), ("S", (9, 12))]
 
+# TODO: Get the user's preferred facilities
 
 # Validation functions
 # TODO: Implement user input validation functions
@@ -120,6 +120,8 @@ def filter_unavailable_days_hours(df, unavailable_days_hours):
     return df
 
 
+# TODO: Add a boolean indicating whether the facility is preferred by the user
+
 
 # Optimization functions
 
@@ -128,15 +130,20 @@ def paretoset_optimize_days_and_hours(current_week_forecast, next_week_forecast,
 
     # Get the optimal times in a day by pareto-optimizing for minimal attendance and preferred times
     def pareto_optimize_day(df):
-        # Convert categorical variables to numeric for paretoset
+        # Convert categorical variables to numeric for paretoset and add higher penalty to these values
         df = df.copy()
-        df["is_preferred_day_hour"] = df["is_preferred_day_hour"].astype(int)
-        df["is_raining"] = df["is_raining"].astype(int)
-        # Minimize percentage_filled given is_raining and is_preferred_day_hour
-        mask = paretoset(df[["percentage_filled", "is_raining", "is_preferred_day_hour"]], sense=["min", "min", "max"])
-        pareto_df = df.loc[mask]
-        # Return the rows of pareto optimal day/hour combinations
-        return pareto_df
+        preferred_weight = 10
+        raining_weight = 5
+        df["is_preferred_day_hour"] = (df["is_preferred_day_hour"].astype(int)) * preferred_weight
+        df["is_raining"] = (1 - df["is_raining"].astype(int)) * raining_weight
+        # Calculate a categorical score to maximize
+        df["categorical_score"] = df["is_preferred_day_hour"] + df["is_raining"]
+        # Sort recommendations by categorical score and percentage_filled
+        df = df.sort_values(by=["categorical_score", "percentage_filled"], ascending=[False, True])
+        # Drop duplicate timestamps to avoid recommending the same timestamp twice
+        df = df.drop_duplicates(subset=["timestamp"], keep="first")
+        # Return the two highest categorical score rows of pareto optimal day/hour combinations
+        return df.head(2)
         
     # Get the optimal times for each day of the week
     def pareto_optimize_week(df):
@@ -159,25 +166,29 @@ def paretoset_optimize_days_and_hours(current_week_forecast, next_week_forecast,
 
     # Create pareto optimized weekly day/hour combinations by exercise category
     def pareto_optimize_by_exercise_category(df, user_exercise_categories):
-        # Split df into a list of dfs for each exercise category
         recommended_category_dfs = []
         # For each exercise category, get the optimal weekly day/hour combinations
         for category in user_exercise_categories:
-            category_df = df[df["category_list"].apply(lambda lst: category in lst)]
+            category_df = df[df["category_list"].apply(lambda lst: category in lst)].copy()
+            if category_df.empty:
+                continue
+            category_df["optimized_activity_or_exercise_category"] = category
             recommended_category_dfs.append(pareto_optimize_week(category_df))
         # Combine the recommended category dfs into a single dataframe and return
-        return pd.concat(recommended_category_dfs, ignore_index=True)
+        return pd.concat(recommended_category_dfs, ignore_index=True) if recommended_category_dfs else pd.DataFrame()
 
     # Create pareto optimized weekly day/hour combinations by activity
     def pareto_optimize_by_activity(df, user_activities):
-        # Split df into lists of dfs for each activity (rows where activity appears in activity_list)
         recommended_activity_dfs = []
         # For each activity, get the optimal weekly day/hour combinations
         for activity in user_activities:
-            activity_df = df[df["activity_list"].apply(lambda lst: activity in lst)]
+            activity_df = df[df["activity_list"].apply(lambda lst: activity in lst)].copy()
+            if activity_df.empty:
+                continue
+            activity_df["optimized_activity_or_exercise_category"] = activity
             recommended_activity_dfs.append(pareto_optimize_week(activity_df))
         # Combine the recommended activity dfs into a single dataframe and return
-        return pd.concat(recommended_activity_dfs, ignore_index=True)
+        return pd.concat(recommended_activity_dfs, ignore_index=True) if recommended_activity_dfs else pd.DataFrame()
 
     # Current week: pareto-optimize by exercise category and activity
     current_week_exercise_category = pareto_optimize_by_exercise_category(current_week_forecast, user_exercise_categories)
@@ -234,8 +245,14 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     # Recommendations
 
     current_week_recommendations, next_week_recommendations = paretoset_optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exercise_categories, user_activities)
-    # Return the current and next week forecasts
+    # Drop the columns not needed for cleaner output
+    current_week_recommendations = current_week_recommendations.drop(columns=["predicted_count", "is_outdoor_facility", "categories", "activities", "activity_list", "category_list"])
+    next_week_recommendations = next_week_recommendations.drop(columns=["predicted_count", "is_outdoor_facility", "categories", "activities", "activity_list", "category_list"])
+    # Return the current and next week recommendations
     return current_week_recommendations, next_week_recommendations
+
+# TODO: Output formatting functions
+
 
 def main():
     current_week_number, next_week_number = get_current_next_week_numbers()
