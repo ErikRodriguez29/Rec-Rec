@@ -51,7 +51,9 @@ def get_user_preferred_activities_and_exercise_categories():
     # input_exercise_categories = input("Enter the exercise categories you are interested in (comma separated): ").lower().strip().split(",")
     # input_activities = input("Enter the activities you are interested in (comma separated): ").lower().strip().split(",")
     # return set(input_activities), set(input_exercise_categories)
-    return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
+    # return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
+    return set(["racquetball"]), set([])
+    # return set([]), set([])
 
 
 # Get the user's preferred hours to go to the gym
@@ -95,6 +97,12 @@ def get_user_preferred_facilities():
         "Climbing Center - MAC",
     ])
 
+# Get whether rain is a hard filter for the user
+def get_user_rain_filter():
+    # input_rain_filter = input("Enter whether rain is a hard filter for you (yes/no): ").lower().strip()
+    # return input_rain_filter == "yes" or input_rain_filter == "y"
+    return True
+
 # Validation functions
 # TODO: Implement user input validation functions
 # This may not be necessary if input is validated/restricted in the frontend
@@ -128,6 +136,10 @@ def augment_with_preferred_days_hours(df, preferred_days_hours):
         return False
     output["is_preferred_day_hour"] = output.apply(is_preferred, axis=1)
     return output
+
+# Filter the forecast to remove rows where it is raining if the user has a hard filter for rain
+def filter_rain(df, rain_filter):
+    return df.loc[~(df["is_raining"] == True)] if rain_filter else df
 
 
 # Filter the forecast to remove unavailable days and hours
@@ -246,6 +258,8 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     unavailable_days_hours = get_user_unavailable_days_hours()
     # Get the user's preferred facilities
     preferred_facilities = get_user_preferred_facilities()
+    # Get whether rain is a hard filter for the user
+    rain_filter = get_user_rain_filter()
     # Filtering
 
     # Filter the current and next week forecasts to only include activities and exercise categories that the user is interested in
@@ -254,6 +268,9 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     # Filter the current and next week forecasts to eliminate outdoor facilities when it is raining
     current_week_forecast = filter_outdoor_facilities(current_week_forecast)
     next_week_forecast = filter_outdoor_facilities(next_week_forecast)
+    # Filter the current and next week forecasts to remove rows where it is raining if the user has a hard filter for rain
+    current_week_forecast = filter_rain(current_week_forecast, rain_filter)
+    next_week_forecast = filter_rain(next_week_forecast, rain_filter)
     # Augment the current and next week forecasts with the user's preferred hours
     current_week_forecast = augment_with_preferred_days_hours(current_week_forecast, preferred_days_hours)
     next_week_forecast = augment_with_preferred_days_hours(next_week_forecast, preferred_days_hours)
