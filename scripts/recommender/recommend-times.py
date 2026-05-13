@@ -132,17 +132,17 @@ def optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exer
     def optimize_day(df):
         # Convert categorical variables to numeric and add higher penalty to these values
         df = df.copy()
-        preferred_weight = 10
+        percentage_filled_weight = 0.5
+        preferred_day_hour_weight = 20
         raining_weight = 5
-        df["is_preferred_day_hour"] = (df["is_preferred_day_hour"].astype(int)) * preferred_weight
-        df["is_raining"] = abs(1 - df["is_raining"].astype(int)) * raining_weight # Taking inverse of is_raining since we want to increase the score when its not raining
-        # Calculate a categorical score to maximize
-        df["categorical_score"] = df["is_preferred_day_hour"] + df["is_raining"]
-        # Sort recommendations by categorical score and percentage_filled
-        df = df.sort_values(by=["categorical_score", "percentage_filled"], ascending=[False, True])
-        # Drop duplicate timestamps to avoid recommending the same timestamp twice
-        df = df.drop_duplicates(subset=["timestamp"], keep="first")
-        # Return the two highest categorical score rows of optimal day/hour combinations
+        df["percentage_filled_score"] = (100 - df["percentage_filled"]).astype(int) * percentage_filled_weight # Taking inverse of percentage_filled since we want to increase the score with lower attendance
+        df["is_preferred_day_hour_score"] = (df["is_preferred_day_hour"].astype(int)) * preferred_day_hour_weight
+        df["is_raining_score"] = abs(1 - df["is_raining"].astype(int)) * raining_weight # Taking inverse of is_raining since we want to increase the score when its not raining
+        # Calculate a total score to maximize
+        df["total_score"] = df["percentage_filled_score"] + df["is_preferred_day_hour_score"] + df["is_raining_score"]
+        # Sort recommendations by total score
+        df = df.sort_values(by=["total_score"], ascending=False)
+        # Return the two highest total score rows
         return df.head(2)
         
     # Get the optimal times for each day of the week
