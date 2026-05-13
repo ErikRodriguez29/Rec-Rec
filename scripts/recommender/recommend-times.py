@@ -247,8 +247,8 @@ def main():
     current_week_recommendations, next_week_recommendations = recommend_times(current_week_forecast, next_week_forecast, current_week_number, next_week_number)
     # print(f"Current week recommendations: {current_week_recommendations}")
     # print(f"Next week recommendations: {next_week_recommendations}")
-    current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/forecast_values_recommendations.csv", index=False)
-    next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/forecast_values_recommendations.csv", index=False)
+    current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/recommendations.csv", index=False)
+    next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/recommendations.csv", index=False)
     print(f"Recommended times saved to CSV files")
 
     # print the recommendations by facility name, day of the week, and hour
