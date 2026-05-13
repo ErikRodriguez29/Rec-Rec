@@ -76,7 +76,24 @@ def get_user_unavailable_days_hours():
     # return output
     return [("T", (10, 12)), ("W", (10, 12)), ("S", (9, 12))]
 
-# TODO: Get the user's preferred facilities
+# Get the user's preferred facilities
+def get_user_preferred_facilities():
+    # input_facilities = input("Enter the facilities you are interested in (comma separated): ").lower().strip().split(",")
+    # return set(input_facilities)
+    return set([
+        "Main Gym Court 1 (North)", 
+        "Main Gym Court 2 (South)",
+        "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "Outdoor Fitness 2 (Behind Pottery)",
+        "Pavilion Court 1 (West)",
+        "Pavilion Court 2 (East)",
+        "FC 1- North Room",
+        "FC 1 - South Room",
+        "FC 2 - 1st floor",
+        "FC 2- Mezzanine",
+        "FC 3 - MAC",
+        "Climbing Center - MAC",
+    ])
 
 # Validation functions
 # TODO: Implement user input validation functions
@@ -120,8 +137,11 @@ def filter_unavailable_days_hours(df, unavailable_days_hours):
     return df
 
 
-# TODO: Add a boolean indicating whether the facility is preferred by the user
-
+# Add a boolean indicating whether the facility is preferred by the user
+def augment_with_preferred_facilities(df, preferred_facilities):
+    output = df.copy()
+    output["is_preferred_facility"] = output["facility_name"].isin(preferred_facilities)
+    return output
 
 # Optimization functions
 
@@ -135,13 +155,15 @@ def optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exer
         percentage_filled_weight = 0.33
         preferred_day_hour_weight = 20
         raining_weight = 5
+        preferred_facility_weight = 10
         df["percentage_filled_score"] = ((100 - df["percentage_filled"]) * percentage_filled_weight).round(2) # Taking inverse of percentage_filled since we want to increase the score with lower attendance
    
         df["is_preferred_day_hour_score"] = (df["is_preferred_day_hour"].astype(int)) * preferred_day_hour_weight
         df["is_raining_score"] = abs(1 - df["is_raining"].astype(int)) * raining_weight # Taking inverse of is_raining since we want to increase the score when its not raining
+        df["is_preferred_facility_score"] = (df["is_preferred_facility"].astype(int)) * preferred_facility_weight
         # Calculate a total score to maximize
-        df["total_score"] = (df["percentage_filled_score"] + df["is_preferred_day_hour_score"] + df["is_raining_score"]).round(2)
-        # Sort recommendations by total score)
+        df["total_score"] = (df["percentage_filled_score"] + df["is_preferred_day_hour_score"] + df["is_raining_score"] + df["is_preferred_facility_score"]).round(2)
+        # Sort recommendations by total score
         df = df.sort_values(by=["total_score"], ascending=False)
         # Return the two highest total score rows
         return df.head(2)
@@ -222,7 +244,8 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     preferred_days_hours = get_user_preferred_days_hours()
     # Get the user's unavailable days and hours
     unavailable_days_hours = get_user_unavailable_days_hours()
-
+    # Get the user's preferred facilities
+    preferred_facilities = get_user_preferred_facilities()
     # Filtering
 
     # Filter the current and next week forecasts to only include activities and exercise categories that the user is interested in
@@ -237,6 +260,9 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     # Filter the current and next week forecasts to remove unavailable days and hours
     current_week_forecast = filter_unavailable_days_hours(current_week_forecast, unavailable_days_hours)
     next_week_forecast = filter_unavailable_days_hours(next_week_forecast, unavailable_days_hours)
+    # Augment the current and next week forecasts with the user's preferred facilities
+    current_week_forecast = augment_with_preferred_facilities(current_week_forecast, preferred_facilities)
+    next_week_forecast = augment_with_preferred_facilities(next_week_forecast, preferred_facilities)
 
 
     # print(f"Current week forecast: {current_week_forecast}")
