@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 import pandas as pd
+import argparse
 import os
 
 
@@ -55,7 +56,7 @@ def get_user_preferred_activities_and_exercise_categories():
     # return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
     # return set(["swimming", "climbing"]), set([])
     # return set(["racquetball"]), set([])
-    return set(["weight lifting"]), set(["cardio"])
+    return set([""]), set(["arms", "weight training"])
 
 
 # Get the user's preferred hours to go to the gym
@@ -67,7 +68,7 @@ def get_user_preferred_days_hours():
     #     hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
     #     output.append((day, hours))
     # return output
-    return [("M", (14, 17)), ("T", (14, 17)), ("W", (14, 17)), ("R", (14, 17)), ("F", (14, 17)), ("S", (14, 17)), ("U", (14, 17))]
+    return [("M", (6, 11)), ("T", (6, 11)), ("W", (6, 11)), ("R", (6, 11)), ("F", (6, 11)), ("S", (6, 11)), ("U", (6, 11))]
 
 
 # TODO: Add google calendar integration to get the user's unavailable days and hours (this will likely be done in a separate script)
@@ -103,10 +104,16 @@ def get_user_preferred_facilities():
     return set([
         # "FC 1- North Room",
         # "FC 1 - South Room",
-        "FC 2 - 1st floor",
-        "FC 2- Mezzanine",
-        "FC 3 - MAC"
+        # "FC 2 - 1st floor",
+        # "FC 2- Mezzanine",
+        # "FC 3 - MAC"
     ])
+
+# TODO Get whether preferred facilities is a hard filter (hard no) for the user, implement this to filter functions as well
+def get_user_preferred_facilities_hard_filter():
+    # input_preferred_facilities_hard_filter = input("Enter whether preferred facilities is a hard filter for you (yes/no): ").lower().strip()
+    # return input_preferred_facilities_hard_filter == "yes" or input_preferred_facilities_hard_filter == "y"
+    return True
 
 # Get whether rain is a hard filter (hard no) for the user
 def get_user_rain_filter():
@@ -128,13 +135,21 @@ def get_user_rain_filter():
 def filter_matching_preferences(df, preferred_activities, preferred_categories):
     is_matching_activity = df["activity_list"].apply(lambda lst: bool(preferred_activities & set(lst)))
     is_matching_category = df["category_list"].apply(lambda lst: bool(preferred_categories & set(lst)))
-    return df.loc[is_matching_activity | is_matching_category]
+    result = df.loc[is_matching_activity | is_matching_category]
+    if result.empty:
+        print("No recommendations found, reason: no matching activities or exercise categories")
+        return None
+    return result
 
 # Remove only rows that are both outdoor and raining (keep indoor; keep outdoor when dry)
 def filter_outdoor_facilities(df):
     outdoor = df["is_outdoor_facility"] == True
     raining = df["is_raining"] == True
-    return df.loc[~(outdoor & raining)]
+    result = df.loc[~(outdoor & raining)]
+    if result.empty:
+        print("No recommendations found, reason: no outdoor facilities available when raining")
+        return None
+    return result
 
 # Add column is_preferred_day_hour to indicate if the row falls within user's preferred days and hours
 def augment_with_preferred_days_hours(df, preferred_days_hours):
@@ -146,17 +161,35 @@ def augment_with_preferred_days_hours(df, preferred_days_hours):
                 return True
         return False
     output["is_preferred_day_hour"] = output.apply(is_preferred, axis=1)
+    if output.empty:
+        print("No recommendations found, reason: no preferred days and hours")
+        return None
     return output
 
 # Filter the forecast to remove rows where it is raining if the user has a hard filter for rain
 def filter_rain(df, rain_filter):
-    return df.loc[~(df["is_raining"] == True)] if rain_filter else df
+    result = df.loc[~(df["is_raining"] == True)] if rain_filter else df
+    if result.empty:
+        print("No recommendations found, reason: rain filter is hard and there is no available time when not raining")
+        return None
+    return result
+
+# Filter the forecast to remove facilities that are not preferred by the user if the user has a hard filter for preferred facilities
+def filter_preferred_facilities(df, preferred_facilities_hard_filter):
+    result = df.loc[df["is_preferred_facility"] == True] if preferred_facilities_hard_filter else df
+    if result.empty:
+        print("No recommendations found, reason: preferred facilities filter is hard and there are no preferred facilities found with matching exercise categories and activities or no preferred facilities")
+        return None
+    return result
 
 
 # Filter the forecast to remove unavailable days and hours
 def filter_unavailable_days_hours(df, unavailable_days_hours):
     for day, hours in unavailable_days_hours:
         df = df.loc[(df["day_of_week"] != day) | (df["hour"] < hours[0]) | (df["hour"] > hours[1])]
+    if df.empty:
+        print("No recommendations found, reason: there are no available days and hours")
+        return None
     return df
 
 
@@ -271,6 +304,8 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     preferred_facilities = get_user_preferred_facilities()
     # Get whether rain is a hard filter for the user
     rain_filter = get_user_rain_filter()
+    # Get whether preferred facilities is a hard filter for the user
+    preferred_facilities_hard_filter = get_user_preferred_facilities_hard_filter()
     # Filtering
 
     # Filter the current and next week forecasts to only include activities and exercise categories that the user is interested in
@@ -291,7 +326,19 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     # Augment the current and next week forecasts with the user's preferred facilities
     current_week_forecast = augment_with_preferred_facilities(current_week_forecast, preferred_facilities)
     next_week_forecast = augment_with_preferred_facilities(next_week_forecast, preferred_facilities)
+    # Filter the current and next week forecasts to remove facilities that are not preferred by the user if the user has a hard filter for preferred facilities
+    current_week_forecast = filter_preferred_facilities(current_week_forecast, preferred_facilities_hard_filter)
+    next_week_forecast = filter_preferred_facilities(next_week_forecast, preferred_facilities_hard_filter)
 
+    if current_week_forecast is None and next_week_forecast is None:
+        print("No recommendations found for either week!")
+        return None, None
+    if current_week_forecast is None:
+        # print("No recommendations found for current week!")
+        return None, None
+    if next_week_forecast is None:
+        # print("No recommendations found for next week!")
+        return None, None
 
     # print(f"Current week forecast: {current_week_forecast}")
     # print(f"Next week forecast: {next_week_forecast}")
@@ -434,9 +481,14 @@ def format_recommendations_to_print(current_week_recommendations, next_week_reco
 
 def main():
     # TODO: Add CLI argument parsing to get the current and next week numbers (call user input functions from here, implement argparse)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument()
     current_week_number, next_week_number = get_current_next_week_numbers()
     current_week_forecast, next_week_forecast = load_data(current_week_number, next_week_number)
     current_week_recommendations, next_week_recommendations = recommend_times(current_week_forecast, next_week_forecast, current_week_number, next_week_number)
+    if current_week_recommendations is None or next_week_recommendations is None:
+        print("No recommendations found for current week or next week!")
+        return
     current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/recommendations.csv", index=False)
     next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/recommendations.csv", index=False)
     print(f"Recommended times saved to CSV files")
