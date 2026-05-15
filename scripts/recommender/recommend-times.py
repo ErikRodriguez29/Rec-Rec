@@ -107,86 +107,46 @@ def load_data(current_week_number, next_week_number):
 # TODO: Modify these functions to parse CLI arguments instead of hardcoding/getting values from input
 
 # Get the user's preferred activities and exercise categories   
-def get_user_preferred_activities_and_exercise_categories():
-    # input_exercise_categories = input("Enter the exercise categories you are interested in (comma separated): ").lower().strip().split(",")
-    # input_activities = input("Enter the activities you are interested in (comma separated): ").lower().strip().split(",")
-    # return set(input_activities), set(input_exercise_categories)
-    # return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
-    # return set(["swimming", "climbing"]), set([])
-    # return set(["racquetball"]), set([])
-    # return set([""]), set(["arms", "weight training"])
-    activities, exercise_categories = set(["squash"]), set(["cardio"])
-    if(activities == set([]) and exercise_categories == set([])):
+def get_user_preferred_activities_and_exercise_categories(args):
+    user_activities, user_exercise_categories = set(args.preferred_activities.split(",") if args.preferred_activities else []), set(args.preferred_exercise_categories.split(",") if args.preferred_exercise_categories else [])
+    if user_activities == set([]) and user_exercise_categories == set([]):
         print("No preferred activities or exercise categories entered, please enter at least one activity or exercise category")
         exit()
-    return activities, exercise_categories
+    return user_activities, user_exercise_categories
 
 # Get the user's preferred hours to go to the gym
-def get_user_preferred_days_hours():
-    # input_days_hours = input("Enter the days and hours you prefer to go (comma separated) (day; hour range (min, max)): ").lower().strip().split("; ")
-    # output = []
-    # for day, hours in input_days_hours:
-    #     day = day.upper()[0]
-    #     hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
-    #     output.append((day, hours))
-    # return output
-    return [("M", (6, 11)), ("T", (6, 11)), ("W", (6, 11)), ("R", (6, 11)), ("F", (6, 11)), ("S", (6, 11)), ("U", (6, 11))]
+def get_user_preferred_days_hours(args):
+    preferred_days_hours = []
+    parts = [p.strip() for p in args.preferred_days_hours.lower().strip().split(";") if p.strip()]
+    for day, hours in zip(parts[0::2], parts[1::2]):
+        day = day.upper()[0]
+        hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
+        preferred_days_hours.append((day, hours))
+    return preferred_days_hours
 
 
 # TODO: Add google calendar integration to get the user's unavailable days and hours (this will likely be done in a separate script)
 # Get the set of user's unavailable days and hours
-def get_user_unavailable_days_hours():
-    # input_days_hours = input("Enter the days and hours you are unavailable (comma separated) (day; hour range (min, max)): ").lower().strip().split("; ")
-    # output = []
-    # for day, hours in input_days_hours:
-    #     day = day.upper()[0]
-    #     hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
-    #     output.append((day, hours))
-    # return output
-    return [("T", (10, 12)), ("T", (10, 12)), ("S", (9, 12))]
+def get_user_unavailable_days_hours(args):
+    unavailable_days_hours = []
+    parts = [p.strip() for p in args.unavailable_days_hours.lower().strip().split(";") if p.strip()]
+    for day, hours in zip(parts[0::2], parts[1::2]):
+        day = day.upper()[0]
+        hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
+        unavailable_days_hours.append((day, hours))
+    return unavailable_days_hours
 
 # Get the user's preferred facilities
-def get_user_preferred_facilities():
-    # input_facilities = input("Enter the facilities you are interested in (comma separated): ").lower().strip().split(",")
-    # return set(input_facilities)
-    # return set([
-    #     "Main Gym Court 1 (North)", 
-    #     "Main Gym Court 2 (South)",
-    #     "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
-    #     "Outdoor Fitness 2 (Behind Pottery)",
-    #     "Pavilion Court 1 (West)",
-    #     "Pavilion Court 2 (East)",
-    #     "FC 1- North Room",
-    #     "FC 1 - South Room",
-    #     "FC 2 - 1st floor",
-    #     "FC 2- Mezzanine",
-    #     "FC 3 - MAC",
-    #     "Climbing Center - MAC",
-    # ])
-    return set([
-        # "FC 1- North Room",
-        # "FC 1 - South Room",
-        # "FC 2 - 1st floor",
-        # "FC 2- Mezzanine",
-        # "FC 3 - MAC"
-    ])
+def get_user_preferred_facilities(args):
+    return set(args.preferred_facilities.split(",") if args.preferred_facilities else [])
 
-def get_user_preferred_facilities_hard_filter():
-    # input_preferred_facilities_hard_filter = input("Enter whether preferred facilities is a hard filter for you (yes/no): ").lower().strip()
-    # return input_preferred_facilities_hard_filter == "yes" or input_preferred_facilities_hard_filter == "y"
-    return False
+def get_user_preferred_facilities_hard_filter(args):
+    return args.preferred_facilities_hard_filter == "yes" or args.preferred_facilities_hard_filter == "y"
 
-# Get whether rain is a hard filter (hard no) for the user
-def get_user_rain_filter():
-    # input_rain_filter = input("Enter whether rain is a hard filter for you (yes/no): ").lower().strip()
-    # return input_rain_filter == "yes" or input_rain_filter == "y"
-    return True
+def get_user_rain_filter(args):
+    return args.rain_filter == "yes" or args.rain_filter == "y"
 
 # Validation functions
-# TODO: Implement user input validation functions
-# This may not be necessary if input is validated/restricted in the frontend
-
-
 
 # Filtering functions
 
@@ -352,21 +312,14 @@ def save_data(current_week_forecast, next_week_forecast, current_week_number, ne
     next_week_forecast.to_csv(f"../../predictions/Week {next_week_number}/forecast_values_filtered.csv", index=False)
 
 # Recommend times
-def recommend_times(current_week_forecast, next_week_forecast, current_week_number, next_week_number):
-    # User input
-
-    # Get the user's preferred activities and exercise categories
-    user_activities, user_exercise_categories = get_user_preferred_activities_and_exercise_categories()
-    # Get the user's preferred hours to go to the gym
-    preferred_days_hours = get_user_preferred_days_hours()
-    # Get the user's unavailable days and hours
-    unavailable_days_hours = get_user_unavailable_days_hours()
-    # Get the user's preferred facilities
-    preferred_facilities = get_user_preferred_facilities()
-    # Get whether rain is a hard filter for the user
-    rain_filter = get_user_rain_filter()
-    # Get whether preferred facilities is a hard filter for the user
-    preferred_facilities_hard_filter = get_user_preferred_facilities_hard_filter()
+def recommend_times(args, current_week_forecast, next_week_forecast, current_week_number, next_week_number):
+    # Get the user's preferences from the command line
+    user_activities, user_exercise_categories = get_user_preferred_activities_and_exercise_categories(args)
+    preferred_days_hours = get_user_preferred_days_hours(args)
+    unavailable_days_hours = get_user_unavailable_days_hours(args)
+    preferred_facilities = get_user_preferred_facilities(args)
+    rain_filter = get_user_rain_filter(args)
+    preferred_facilities_hard_filter = get_user_preferred_facilities_hard_filter(args)
     # Filtering
 
     # Filter the current and next week forecasts to only include activities and exercise categories that the user is interested in
@@ -567,7 +520,7 @@ def main():
     # Load the current and next week forecast data
     current_week_forecast, next_week_forecast = load_data(current_week_number, next_week_number)
     # Recommend the times
-    current_week_recommendations, next_week_recommendations = recommend_times(current_week_forecast, next_week_forecast, current_week_number, next_week_number)
+    current_week_recommendations, next_week_recommendations = recommend_times(args, current_week_forecast, next_week_forecast, current_week_number, next_week_number)
     if current_week_recommendations is None or next_week_recommendations is None:
         print("No recommendations found for current week or next week!")
         return
