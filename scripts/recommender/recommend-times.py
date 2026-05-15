@@ -45,6 +45,7 @@ def load_data(current_week_number, next_week_number):
 
 
 # User input functions
+# TODO: Modify these functions to parse CLI arguments instead of hardcoding/getting values from input
 
 # Get the user's preferred activities and exercise categories   
 def get_user_preferred_activities_and_exercise_categories():
@@ -69,7 +70,7 @@ def get_user_preferred_days_hours():
     return [("M", (14, 17)), ("T", (14, 17)), ("W", (14, 17)), ("R", (14, 17)), ("F", (14, 17)), ("S", (14, 17)), ("U", (14, 17))]
 
 
-# TODO: Add google calendar integration to get the user's unavailable days and hours
+# TODO: Add google calendar integration to get the user's unavailable days and hours (this will likely be done in a separate script)
 # Get the set of user's unavailable days and hours
 def get_user_unavailable_days_hours():
     # input_days_hours = input("Enter the days and hours you are unavailable (comma separated) (day; hour range (min, max)): ").lower().strip().split("; ")
@@ -431,6 +432,7 @@ def format_recommendations_to_print(current_week_recommendations, next_week_reco
     return output
 
 def main():
+    # TODO: Add CLI argument parsing to get the current and next week numbers (call user input functions from here, implement argparse)
     current_week_number, next_week_number = get_current_next_week_numbers()
     current_week_forecast, next_week_forecast = load_data(current_week_number, next_week_number)
     current_week_recommendations, next_week_recommendations = recommend_times(current_week_forecast, next_week_forecast, current_week_number, next_week_number)
