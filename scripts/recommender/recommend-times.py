@@ -54,7 +54,7 @@ def get_user_preferred_activities_and_exercise_categories():
     # return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
     # return set(["swimming", "climbing"]), set([])
     # return set(["racquetball"]), set([])
-    return set([]), set(["cardio", "arms", "legs", "core"])
+    return set(["weight lifting"]), set(["cardio"])
 
 
 # Get the user's preferred hours to go to the gym
@@ -66,8 +66,10 @@ def get_user_preferred_days_hours():
     #     hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
     #     output.append((day, hours))
     # return output
-    return [("M", (10, 12)), ("T", (10, 12)), ("W", (13, 15)), ("R", (10, 12)), ("F", (10, 12)), ("S", (9, 12)), ("U", (9, 12))]
+    return [("M", (14, 17)), ("T", (14, 17)), ("W", (14, 17)), ("R", (14, 17)), ("F", (14, 17)), ("S", (14, 17)), ("U", (14, 17))]
 
+
+# TODO: Add google calendar integration to get the user's unavailable days and hours
 # Get the set of user's unavailable days and hours
 def get_user_unavailable_days_hours():
     # input_days_hours = input("Enter the days and hours you are unavailable (comma separated) (day; hour range (min, max)): ").lower().strip().split("; ")
@@ -77,25 +79,32 @@ def get_user_unavailable_days_hours():
     #     hours = (int(hours.split(",")[0]), int(hours.split(",")[1]))
     #     output.append((day, hours))
     # return output
-    return [("T", (10, 12)), ("W", (10, 12)), ("S", (9, 12))]
+    return [("T", (10, 12)), ("T", (10, 12)), ("S", (9, 12))]
 
 # Get the user's preferred facilities
 def get_user_preferred_facilities():
     # input_facilities = input("Enter the facilities you are interested in (comma separated): ").lower().strip().split(",")
     # return set(input_facilities)
+    # return set([
+    #     "Main Gym Court 1 (North)", 
+    #     "Main Gym Court 2 (South)",
+    #     "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+    #     "Outdoor Fitness 2 (Behind Pottery)",
+    #     "Pavilion Court 1 (West)",
+    #     "Pavilion Court 2 (East)",
+    #     "FC 1- North Room",
+    #     "FC 1 - South Room",
+    #     "FC 2 - 1st floor",
+    #     "FC 2- Mezzanine",
+    #     "FC 3 - MAC",
+    #     "Climbing Center - MAC",
+    # ])
     return set([
-        "Main Gym Court 1 (North)", 
-        "Main Gym Court 2 (South)",
-        "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
-        "Outdoor Fitness 2 (Behind Pottery)",
-        "Pavilion Court 1 (West)",
-        "Pavilion Court 2 (East)",
-        "FC 1- North Room",
-        "FC 1 - South Room",
+        # "FC 1- North Room",
+        # "FC 1 - South Room",
         "FC 2 - 1st floor",
         "FC 2- Mezzanine",
-        "FC 3 - MAC",
-        "Climbing Center - MAC",
+        "FC 3 - MAC"
     ])
 
 # Get whether rain is a hard filter (hard no) for the user
