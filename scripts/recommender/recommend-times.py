@@ -56,8 +56,12 @@ def get_user_preferred_activities_and_exercise_categories():
     # return set(["climbing", "badminton", "weight lifting", "bike machines"]), set(["arms", "legs", "core", "cardio"])
     # return set(["swimming", "climbing"]), set([])
     # return set(["racquetball"]), set([])
-    return set([""]), set(["arms", "weight training"])
-
+    # return set([""]), set(["arms", "weight training"])
+    activities, exercise_categories = set(["squash"]), set(["cardio"])
+    if(activities == set([]) and exercise_categories == set([])):
+        print("No preferred activities or exercise categories entered, please enter at least one activity or exercise category")
+        exit()
+    return activities, exercise_categories
 
 # Get the user's preferred hours to go to the gym
 def get_user_preferred_days_hours():
@@ -113,7 +117,7 @@ def get_user_preferred_facilities():
 def get_user_preferred_facilities_hard_filter():
     # input_preferred_facilities_hard_filter = input("Enter whether preferred facilities is a hard filter for you (yes/no): ").lower().strip()
     # return input_preferred_facilities_hard_filter == "yes" or input_preferred_facilities_hard_filter == "y"
-    return True
+    return False
 
 # Get whether rain is a hard filter (hard no) for the user
 def get_user_rain_filter():
@@ -137,7 +141,7 @@ def filter_matching_preferences(df, preferred_activities, preferred_categories):
     is_matching_category = df["category_list"].apply(lambda lst: bool(preferred_categories & set(lst)))
     result = df.loc[is_matching_activity | is_matching_category]
     if result.empty:
-        print("No recommendations found, reason: no matching activities or exercise categories")
+        print("No recommendations found, reason: there are no matching activities or exercise categories")
         return None
     return result
 
@@ -147,7 +151,7 @@ def filter_outdoor_facilities(df):
     raining = df["is_raining"] == True
     result = df.loc[~(outdoor & raining)]
     if result.empty:
-        print("No recommendations found, reason: no outdoor facilities available when raining")
+        print("No recommendations found, reason: there are no outdoor facilities available when raining")
         return None
     return result
 
@@ -162,7 +166,7 @@ def augment_with_preferred_days_hours(df, preferred_days_hours):
         return False
     output["is_preferred_day_hour"] = output.apply(is_preferred, axis=1)
     if output.empty:
-        print("No recommendations found, reason: no preferred days and hours")
+        print("No recommendations found, reason: there are no preferred days and hours")
         return None
     return output
 
@@ -170,7 +174,7 @@ def augment_with_preferred_days_hours(df, preferred_days_hours):
 def filter_rain(df, rain_filter):
     result = df.loc[~(df["is_raining"] == True)] if rain_filter else df
     if result.empty:
-        print("No recommendations found, reason: rain filter is hard and there is no available time when not raining")
+        print("No recommendations found, reason: rain is a hard filter and there is no available time when not raining")
         return None
     return result
 
@@ -178,7 +182,7 @@ def filter_rain(df, rain_filter):
 def filter_preferred_facilities(df, preferred_facilities_hard_filter):
     result = df.loc[df["is_preferred_facility"] == True] if preferred_facilities_hard_filter else df
     if result.empty:
-        print("No recommendations found, reason: preferred facilities filter is hard and there are no preferred facilities found with matching exercise categories and activities or no preferred facilities")
+        print("No recommendations found, reason: preferred facilities is a hard filter and there are no preferred facilities found with matching exercise categories and activities or no preferred facilities listed")
         return None
     return result
 
@@ -333,12 +337,6 @@ def recommend_times(current_week_forecast, next_week_forecast, current_week_numb
     if current_week_forecast is None and next_week_forecast is None:
         print("No recommendations found for either week!")
         return None, None
-    if current_week_forecast is None:
-        # print("No recommendations found for current week!")
-        return None, None
-    if next_week_forecast is None:
-        # print("No recommendations found for next week!")
-        return None, None
 
     # print(f"Current week forecast: {current_week_forecast}")
     # print(f"Next week forecast: {next_week_forecast}")
@@ -434,6 +432,7 @@ def get_overall_recommendations(df):
 
 # Format the recommendations
 # TODO: We may want to format the recommendations into a json object instead of a string so that it is easier to parse and use in the frontend.
+# Also this does not work for the "or" cases where the facilities are different for the same day and hour.
 def format_recommendations(df):
     output = []
     # Group by activity or exercise category and iterate through each group
