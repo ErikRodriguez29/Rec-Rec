@@ -3,10 +3,68 @@ import pandas as pd
 import argparse
 import os
 
-
+# TODO: This file is long and it might be worth splitting into multiple files (data preprocessing, user input, filtering, optimization, output formatting)
 
 # Data preprocessing functions
 
+available_facilities = [
+    "Racquetball Court 1",
+    "Racquetball Court 2",
+    "Racquetball Court 3",
+    "Racquetball Court 4",
+    "Squash Court 1",
+    "Galleria",
+    "Main Gym Court 1 (North)",
+    "Main Gym Court 2 (South)",
+    "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+    "Pavilion Court 1 (West)",
+    "Pavilion Court 2 (East)",
+    "Outdoor Fitness 2 (Behind Pottery)",
+    "FC 1- North Room",
+    "FC 1 - South Room",
+    "FC 2 - 1st floor",
+    "FC 2- Mezzanine",
+    "FC 3 - MAC",
+    "MAC Court",
+    "Spa",
+    "Small Pool",
+    "Big Pool",
+    "Pool Deck",
+    "Climbing Center - MAC",
+]
+
+available_activities = [
+    "racquetball",
+    "squash",
+    "ellipticals (precor branded machines)",
+    "stairmasters (stair machines)",
+    "treadmills",
+    "basketball",
+    "benching",
+    "bike machines",
+    "weight lifting",
+    "badminton",
+    "arm machines",
+    "core machines",
+    "leg presses",
+    "arm & leg machines",
+    "stairmasters",
+    "weight crunch machines",
+    "hockey",
+    "skating",
+    "swimming",
+    "climbing",
+    # Some facilities ("Spa", "Pool Deck") have activities listed as "NA" which are excluded from the available activities
+]
+
+available_exercise_categories = [
+    "cardio",
+    "arms",
+    "core",
+    "legs",
+    "weight training",
+    # Some facilities ("MAC Court", "Pool Deck", "Spa", "Climbing Center - MAC") use "NA" as a category which are excluded from the available exercise categories
+]
 # Weeks start Monday; January 16, 2026 is in calendar week whose Monday is 2026-01-12.
 starting_date = date(2026, 1, 16)
 anchor_monday = starting_date - timedelta(days=starting_date.weekday())
@@ -113,7 +171,6 @@ def get_user_preferred_facilities():
         # "FC 3 - MAC"
     ])
 
-# TODO Get whether preferred facilities is a hard filter (hard no) for the user, implement this to filter functions as well
 def get_user_preferred_facilities_hard_filter():
     # input_preferred_facilities_hard_filter = input("Enter whether preferred facilities is a hard filter for you (yes/no): ").lower().strip()
     # return input_preferred_facilities_hard_filter == "yes" or input_preferred_facilities_hard_filter == "y"
@@ -478,16 +535,43 @@ def format_recommendations_to_print(current_week_recommendations, next_week_reco
     output += "="*50 + "\n"
     return output
 
+def invoke_argparse():
+    parser = argparse.ArgumentParser(
+        description="Recommend Recreation Center gym times based on user preferences.",
+        epilog=(
+            "Available facilities:\n" +
+            "\n".join(f"- {facility}" for facility in available_facilities) +
+            "\nAvailable activities:\n" +
+            "\n".join(f"- {activity}" for activity in available_activities) +
+            "\nAvailable exercise categories:\n" +
+            "\n".join(f"- {category}" for category in available_exercise_categories)
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("--preferred-activities", type=str, help="Enter the activities you are interested in (comma separated) (Either enter activities or exercise categories, or both, do not leave both blank). See available activities below.", required=False)
+    parser.add_argument("--preferred-exercise-categories", type=str, help="Enter the exercise categories you are interested in (comma separated) (Either enter activities or exercise categories, or both, do not leave both blank). See available exercise categories below.", required=False)
+    parser.add_argument("--preferred-days-hours", type=str, help="Enter the days and hours you prefer to go (comma separated) (day; hour range (min, max)), leave blank if you are not interested in any days or hours", required=True, default="None")
+    parser.add_argument("--unavailable-days-hours", type=str, help="Enter the days and hours you are unavailable (comma separated) (day; hour range (min, max))", required=True, default="None")
+    parser.add_argument("--preferred-facilities", type=str, help="Enter the facilities you are interested in (comma separated), leave blank if you are not interested in any facilities. See available facilities below.", required=False, default="None")
+    parser.add_argument("--rain-filter", type=str, help="Enter whether rain is a hard filter for you (enter yes if you strictly prefer to go to the gym when not raining) (yes/no)", required=False, default="no")
+    parser.add_argument("--preferred-facilities-hard-filter", type=str, help="Enter whether preferred facilities is a hard filter for you (enter yes if you strictly prefer to go to the gym at your preferred facilities) (yes/no)", required=False, default="no")
+    args = parser.parse_args()
+    return args
+
 def main():
-    # TODO: Add CLI argument parsing to get the current and next week numbers (call user input functions from here, implement argparse)
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument()
+    # Get the user's preferences from the command line
+    args = invoke_argparse()
+
+    # Get the current and next week numbers
     current_week_number, next_week_number = get_current_next_week_numbers()
+    # Load the current and next week forecast data
     current_week_forecast, next_week_forecast = load_data(current_week_number, next_week_number)
+    # Recommend the times
     current_week_recommendations, next_week_recommendations = recommend_times(current_week_forecast, next_week_forecast, current_week_number, next_week_number)
     if current_week_recommendations is None or next_week_recommendations is None:
         print("No recommendations found for current week or next week!")
         return
+    # Save the recommendations to CSV files
     current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/recommendations.csv", index=False)
     next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/recommendations.csv", index=False)
     print(f"Recommended times saved to CSV files")
