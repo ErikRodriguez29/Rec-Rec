@@ -45,7 +45,6 @@ def load_data(current_week_number, next_week_number):
 
 
 # User input functions
-# TODO: Modify the input functions so that they parse CLI arguments instead of hardcoding/getting values from input
 
 # Get the user's preferred activities and exercise categories   
 def get_user_preferred_activities_and_exercise_categories():
