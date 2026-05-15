@@ -386,6 +386,7 @@ def get_overall_recommendations(df):
     return output
 
 # Format the recommendations
+# TODO: We may want to format the recommendations into a json object instead of a string so that it is easier to parse and use in the frontend.
 def format_recommendations(df):
     output = []
     # Group by activity or exercise category and iterate through each group
