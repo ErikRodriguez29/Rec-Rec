@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+FRONTEND="$(CDPATH="" cd "$(dirname "$0")/.." && pwd)" || exit 1
+cd "$FRONTEND" || exit 1
+export PATH="$FRONTEND/node_modules/.bin:$PATH"
+exec vp staged "$@"

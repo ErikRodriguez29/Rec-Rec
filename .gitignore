@@ -17,3 +17,6 @@ cache*
 .pytest_cache*
 .ruff_cache*
 recommendations.txt
+
+.env
+.vscode/extensions.json
