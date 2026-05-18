@@ -89,8 +89,11 @@ def split_column_to_list(df, column, new_column):
 
 # Load the current and next week forecast data
 def load_data(current_week_number, next_week_number):
-    current_week_forecast = pd.read_csv(f"../../predictions/Week {current_week_number}/forecast_values.csv")
-    next_week_forecast = pd.read_csv(f"../../predictions/Week {next_week_number}/forecast_values.csv")
+    # TODO: These are hard coded values for testing purposes, remove these and uncomment the below lines
+    current_week_forecast = pd.read_csv("../../predictions/Week 16/forecast_values.csv")
+    next_week_forecast = pd.read_csv("../../predictions/Week 17/forecast_values.csv")
+    # current_week_forecast = pd.read_csv(f"../../predictions/Week {current_week_number}/forecast_values.csv")
+    # next_week_forecast = pd.read_csv(f"../../predictions/Week {next_week_number}/forecast_values.csv")
     # Split the exercise categories and activites into a list for the current week's forecast
     current_week_forecast = split_column_to_list(current_week_forecast, "categories", "category_list")
     current_week_forecast = split_column_to_list(current_week_forecast, "activities", "activity_list")
@@ -124,8 +127,7 @@ def get_user_preferred_days_hours(args):
     return preferred_days_hours
 
 
-# TODO: Add google calendar integration to get the user's unavailable days and hours (this will likely be done in a separate script)
-# Get the set of user's unavailable days and hours
+# Get the set of user's unavailable days and hours (this will be gotten from google calendar integration from the frontend in the future)
 def get_user_unavailable_days_hours(args):
     unavailable_days_hours = []
     parts = [p.strip() for p in args.unavailable_days_hours.lower().strip().split(";") if p.strip()]
@@ -137,15 +139,13 @@ def get_user_unavailable_days_hours(args):
 
 # Get the user's preferred facilities
 def get_user_preferred_facilities(args):
-    return set(args.preferred_facilities.split(",") if args.preferred_facilities else [])
+    return {p.strip() for p in args.preferred_facilities.split(";") if p.strip()}
 
 def get_user_preferred_facilities_hard_filter(args):
     return args.preferred_facilities_hard_filter == "yes" or args.preferred_facilities_hard_filter == "y"
 
 def get_user_rain_filter(args):
     return args.rain_filter == "yes" or args.rain_filter == "y"
-
-# Validation functions
 
 # Filtering functions
 
@@ -272,6 +272,8 @@ def optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exer
             if category_df.empty:
                 continue
             category_df["optimized_activity_or_exercise_category"] = category
+            # Distinguish category-based rows from activity-based rows in the overall summary
+            category_df["recommendation_type"] = "exercise_category"
             recommended_category_dfs.append(optimize_week(category_df))
         # Combine the recommended category dfs into a single dataframe and return
         return pd.concat(recommended_category_dfs, ignore_index=True) if recommended_category_dfs else pd.DataFrame()
@@ -285,6 +287,8 @@ def optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exer
             if activity_df.empty:
                 continue
             activity_df["optimized_activity_or_exercise_category"] = activity
+            # Distinguish activity-based rows from category-based rows in the overall summary
+            activity_df["recommendation_type"] = "activity"
             recommended_activity_dfs.append(optimize_week(activity_df))
         # Combine the recommended activity dfs into a single dataframe and return
         return pd.concat(recommended_activity_dfs, ignore_index=True) if recommended_activity_dfs else pd.DataFrame()
@@ -307,8 +311,11 @@ def optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exer
 
 # Save the current and next week forecasts to a CSV file
 def save_data(current_week_forecast, next_week_forecast, current_week_number, next_week_number):
-    current_week_forecast.to_csv(f"../../predictions/Week {current_week_number}/forecast_values_filtered.csv", index=False)
-    next_week_forecast.to_csv(f"../../predictions/Week {next_week_number}/forecast_values_filtered.csv", index=False)
+    # TODO: These are hard coded values for testing purposes, remove these and uncomment the below lines
+    current_week_forecast.to_csv("../../predictions/Week 16/forecast_values_filtered.csv", index=False)
+    next_week_forecast.to_csv("../../predictions/Week 17/forecast_values_filtered.csv", index=False)
+    # current_week_forecast.to_csv(f"../../predictions/Week {current_week_number}/forecast_values_filtered.csv", index=False)
+    # next_week_forecast.to_csv(f"../../predictions/Week {next_week_number}/forecast_values_filtered.csv", index=False)
 
 # Recommend times
 def recommend_times(args, current_week_forecast, next_week_forecast, current_week_number, next_week_number):
@@ -385,75 +392,78 @@ day_to_name = {
 # Order of the days of the week
 day_order = ["M", "T", "W", "R", "F", "S", "U"]
 
+# Overall recommendation functions
 
-# TODO: This function for getting overall recommendations could probably use two things. First is a better way of moving around the recommended days to maximize score other than 
-# using a list for populated activities or exercise categories (such that suboptimal scores arent introduced to the recommendations just because of the order
-# of the activites that are populated in the list (i.e if one day has a high score for an activity but the next day has a high score for a different activity,
-# the first day should be preferred, however all activites should still be included in the recommendations).
-#
-# Second is that the overall recommendations should be split into two categories, one for exercise categories and one for activities (i.e one with the title 
-# "Overall Recommendations (Exercise Categories)" and one with the title "Overall Recommendations (Activities)") and the recommendations should be split into two
-# sections, one for exercise categories and one for activities. This requires changing/refactoring the earlier recommendation functions, so maybe do this later lol.
 
-# Collect the overall recommendations which maximize score for each day while no category or activity is left out
-def get_overall_recommendations(df):
+# Collect overall recommendations for the week (maximizing score for every day of the week)
+def collect_overall_recommendations(df):
+    recommendations = []
+    # Store all days and activity/exercise categories that have been filled
+    filled_days = []
+    filled_activities_categories = []
+    filled_activities_categories_length = len(df["optimized_activity_or_exercise_category"].unique())
+    # Sort the rows by highest score
+    df = df.sort_values(by="total_score", ascending=False)
+    # Fill all days of the week with the highest scoring recommendations for those days
+    for day in day_order:
+        # Collect the highest overall score row and its day and activity/exercise category
+        for row in range(len(df)):
+            highest_score_row = df.iloc[row]
+            row_day = highest_score_row["day_of_week"][0]
+            row_activity_category = highest_score_row["optimized_activity_or_exercise_category"]
+            # If that day has not been occupied and the activity/exercise category has not been filled, add the recommendation to the set
+            if row_day not in filled_days and row_activity_category not in filled_activities_categories:
+                recommendations.append(highest_score_row)
+                filled_days.append(row_day)
+                filled_activities_categories.append(row_activity_category)
+                break
+        # If all activites or exercise categories have been filled, reset the filled activites and exercise categories
+        if len(filled_activities_categories) == filled_activities_categories_length:
+            filled_activities_categories = []
+    return recommendations
+
+# Format one line for the overall recommendations
+def format_one_overall_recommendation_line(row):
+    day = row["day_of_week"][0]
+    label = row["optimized_activity_or_exercise_category"]
     output = ""
-    output += "Overall Recommendations:\n"
-    output += "--------------------------------\n"
-    scores_list_by_day = set()
-    # Collect the day, activity or exercise category, and score for each recommendation
-    for _, row in df.iterrows():
-        day, activity_or_category, score, facility_name = row["day_of_week"], row["optimized_activity_or_exercise_category"], row["total_score"], row["facility_name"]
-        scores_list_by_day.add((day[0], activity_or_category, score, facility_name))
-
-    # Sort the scores list by day and score
-    df = df.copy()
-    sorted_scores_list_by_day = sorted(
-        scores_list_by_day,
-        key=lambda x: (day_order.index(x[0]), -x[2]) # Ascending order day, descending order score
-    )
-
-    total_num_activities_or_exercise_categories = len(set([x[1] for x in sorted_scores_list_by_day])) # Total number of activities or exercise categories
-    populated_days = []
-    populated_activities_or_exercise_categories = []
-
-    # Append activity recommendations which maximize score for each day while no category or activity is left out. If all categories or activities are already populated,
-    # clear the populated categories or activities and append new recommendations.
-    for day, activity_or_category, score, facility_name in sorted_scores_list_by_day:
-        # Check if day hasn't already been populated, skip otherwise
-        if day not in populated_days:
-            # Check if activity or exercise category hasn't already been populated
-            if activity_or_category not in populated_activities_or_exercise_categories:
-                populated_days.append(day)
-                populated_activities_or_exercise_categories.append(activity_or_category)
-                output += f"On {day_to_name[day]} go to {facility_name} at {hour_to_ampm(int(row['hour']))} for {activity_or_category} (Score: {score})\n"
-            # If all categories or activities are already populated, clear the populated categories or activities and append new recommendations
-            elif len(populated_activities_or_exercise_categories) == total_num_activities_or_exercise_categories:
-                populated_activities_or_exercise_categories.clear()
-                output += f"On {day_to_name[day]} go to {facility_name} at {hour_to_ampm(int(row['hour']))} for {activity_or_category} (Score: {score})\n"
-            # If the activity or exercise category has already been populated, skip
-            else: continue
-        # print(populated_days)
-        # print(populated_activities_or_exercise_categories)
-
-    output += "--------------------------------\n"
+    output += f"On {day_to_name[day]} go to {row['facility_name']} at "
+    output += f"{hour_to_ampm(int(row['hour']))} for {label} (Score: {row['total_score']})\n"
     return output
+
+# Format the overall recommendations (split by exercise categories vs activities when recommendation_type is present)
+def format_overall_recommendations(df):
+    overall_recs = collect_overall_recommendations(df)
+    # Sort the recommendations by day of the week
+    overall_recs.sort(key=lambda x: day_order.index(x["day_of_week"]))
+    body = "".join(
+        format_one_overall_recommendation_line(recommendation)
+        for recommendation in overall_recs
+    )
+    return (
+        "Overall Recommendations:\n"
+        "--------------------------------\n"
+        + body
+        + "--------------------------------\n"
+    )
+    
 
 # Format the recommendations
 # TODO: We may want to format the recommendations into a json object instead of a string so that it is easier to parse and use in the frontend.
-# Also this does not work for the "or" cases where the facilities are different for the same day and hour.
-def format_recommendations(df):
+# Perhaps its best to do both and return both the string and the json object.
+# Also this does not work for the "or" cases where the facilities are different for the same day and hour. This second issue should be fixed first
+def format_activity_category_recommendations(df):
     output = []
     # Group by activity or exercise category and iterate through each group
     grouped = df.groupby("optimized_activity_or_exercise_category")
     for category in sorted(grouped.groups.keys()):
         group = grouped.get_group(category)
         # Recommendations for this activity or exercise category
-        output.append(f"Recommendations for {category}:")
-        output.append(f"--------------------------------")
-        for day_code in day_order:
+        output.append(f"Recommendations for {category}:\n")
+        output.append(f"--------------------------------\n")
+        for day in day_order:
             # Recommendations for this day
-            day_rows = group[group["day_of_week"] == day_code]
+            day_rows = group[group["day_of_week"] == day]
             if day_rows.empty:
                 continue
             # Recommendations for this facility
@@ -465,25 +475,26 @@ def format_recommendations(df):
                 # Add the recommendation for this facility to the output string
                 output.append(
                     # Note: Score here returns the first recommendation score (before the or) which is the higher of the two scores of the recommendations for this facility
-                    f"On {day_to_name[day_code]} go to {facility_name} {time_part} (Score: {fac_rows['total_score'].iloc[0]})"
+                    f"On {day_to_name[day]} go to {facility_name} {time_part} (Score: {fac_rows['total_score'].iloc[0]})\n"
                 )
         # Separate the recommendations for this activity or exercise category
         output.append(f"\n\n")
-    output.append(get_overall_recommendations(df))
-    return "\n".join(output)
+    # Overall recommendations of categories and activities
+    output.append(format_overall_recommendations(df))
+    return output
 
 def format_recommendations_to_print(current_week_recommendations, next_week_recommendations):
-    formatted_current_week_recommendations = format_recommendations(current_week_recommendations)
-    formatted_next_week_recommendations = format_recommendations(next_week_recommendations)
+    formatted_current_week_recommendations = format_activity_category_recommendations(current_week_recommendations)
+    formatted_next_week_recommendations = format_activity_category_recommendations(next_week_recommendations)
     output = ""
     output += "="*50 + "\n"
     output += "CURRENT WEEK RECOMMENDATIONS:\n"
     output += "="*50 + "\n"
-    output += formatted_current_week_recommendations + "\n"
+    output += "".join(formatted_current_week_recommendations) + "\n"
     output += "="*50 + "\n"
     output += "NEXT WEEK RECOMMENDATIONS:\n"
     output += "="*50 + "\n"
-    output += formatted_next_week_recommendations + "\n"
+    output += "".join(formatted_next_week_recommendations) + "\n"
     output += "="*50 + "\n"
     return output
 
@@ -502,9 +513,9 @@ def invoke_argparse():
     )
     parser.add_argument("--preferred-activities", type=str, help="Enter the activities you are interested in (comma separated) (Either enter activities or exercise categories, or both, do not leave both blank). See available activities below.", required=False)
     parser.add_argument("--preferred-exercise-categories", type=str, help="Enter the exercise categories you are interested in (comma separated) (Either enter activities or exercise categories, or both, do not leave both blank). See available exercise categories below.", required=False)
-    parser.add_argument("--preferred-days-hours", type=str, help="Enter the days and hours you prefer to go (comma separated) (day; hour range (min, max)), leave blank if you are not interested in any days or hours", required=True, default="None")
+    parser.add_argument("--preferred-days-hours", type=str, help="Enter the days and hours you prefer to go (comma separated) (day; hour range (min, max)), leave blank if you are not interested in any days or hours", required=False, default="None")
     parser.add_argument("--unavailable-days-hours", type=str, help="Enter the days and hours you are unavailable (comma separated) (day; hour range (min, max))", required=True, default="None")
-    parser.add_argument("--preferred-facilities", type=str, help="Enter the facilities you are interested in (comma separated), leave blank if you are not interested in any facilities. See available facilities below.", required=False, default="None")
+    parser.add_argument("--preferred-facilities", type=str, help="Facilities you prefer: semicolon-separated. Leave blank if none. See available facilities below.", required=False, default="None")
     parser.add_argument("--rain-filter", type=str, help="Enter whether rain is a hard filter for you (enter yes if you strictly prefer to go to the gym when not raining) (yes/no)", required=False, default="no")
     parser.add_argument("--preferred-facilities-hard-filter", type=str, help="Enter whether preferred facilities is a hard filter for you (enter yes if you strictly prefer to go to the gym at your preferred facilities) (yes/no)", required=False, default="no")
     args = parser.parse_args()
@@ -524,8 +535,11 @@ def main():
         print("No recommendations found for current week or next week!")
         return
     # Save the recommendations to CSV files
-    current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/recommendations.csv", index=False)
-    next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/recommendations.csv", index=False)
+    # TODO: These are hard coded values for testing purposes, remove these and uncomment the below lines
+    current_week_recommendations.to_csv("../../predictions/Week 16/recommendations.csv", index=False)
+    next_week_recommendations.to_csv("../../predictions/Week 17/recommendations.csv", index=False)
+    # current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/recommendations.csv", index=False)
+    # next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/recommendations.csv", index=False)
     print(f"Recommended times saved to CSV files")
 
     # Print the set of formatted recommendations
