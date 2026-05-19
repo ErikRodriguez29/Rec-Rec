@@ -80,7 +80,7 @@ def build_week_recommendations_json(df):
         for day, day_df in cat_df.groupby("day_of_week", sort=False):
             # Get the recommendations for the day
             options = [
-                {"facility_name": row["facility_name"], "time_of_day": hour_to_ampm(int(row["hour"]))}
+                {"facility_name": row["facility_name"], "time_of_day": hour_to_ampm(int(row["hour"])), "score": row["total_score"]}
                 for _, row in day_df.sort_values("total_score", ascending=False).iterrows()
             ]
             schedule_entries.append((day_order.index(day), {"day": day_to_name[day], "options": options}))
