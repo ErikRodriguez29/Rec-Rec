@@ -1,6 +1,6 @@
 # UCSB Recreation Center Recommender
 
-The UCSB Recreation Center Recommender is a pipeline that forecasts Rec Cen facility occupancy and recommends gym times based on your preferred activities, exercise categories, schedule, and facilities. The recommender system does the following:
+The UCSB Recreation Center Recommender is a pipeline that forecasts Rec Cen facility occupancy and recommends gym times based on user preferred activities, exercise categories, schedule, and facilities. The recommender system does the following:
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`
 2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R` → `Training.R` → `Predictions.R`).
