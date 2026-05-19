@@ -39,7 +39,7 @@ Example commands can be found at [`scripts/recommender/example_commands.md`](scr
 **Outputs**:
 
 - `scripts/recommender/recommendations.json`: JSON structured output for a frontend. See `scripts/recommender/example_recommendations.json` for an example of the JSON structure.
-- `scripts/recommender/recommendations.txt`: human-readable summary
+- `scripts/recommender/recommendations.txt`: Text summary for debugging
 - `predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `predictions/Week {n}/` and `predictions/Week {n+1}/`) to be used for scoring
 - `predictions/Week {n}/recommendations.csv`: per-week recommendation tables
 
@@ -50,7 +50,7 @@ In `scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use_har
 ## Project layout
 
 ```
-data/                  # facility_counts.csv (and related files)
+data/                  # facility_counts.csv and cached weather data (weather_cache) go here
 predictions/Week {n}/  # forecast_values.csv, recommendations.csv, ...
 scripts/
   EDA.R
@@ -59,6 +59,7 @@ scripts/
   facility-counts.py
   recommender/         # Python recommender modules + recommend-times.py
 tuned_models/          # saved R model workflows (from Training.R)
+EDA/Week {n}/          # saved weekly occupancy plots go here
 ```
 
 For more details on the scripts, see: [`scripts/README.md`](scripts/README.md).
