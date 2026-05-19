@@ -1,6 +1,6 @@
 import pandas as pd
 
-from constants import day_order
+from constants import day_order, percentage_filled_weight_constant, preferred_day_hour_weight_constant, raining_weight_constant, preferred_facility_weight_constant
 
 # Optimization functions
 
@@ -11,10 +11,10 @@ def optimize_days_and_hours(current_week_forecast, next_week_forecast, user_exer
     def optimize_day(df):
         # Convert categorical variables to numeric and add higher penalty to these values
         df = df.copy()
-        percentage_filled_weight = 0.33
-        preferred_day_hour_weight = 20
-        raining_weight = 5
-        preferred_facility_weight = 10
+        percentage_filled_weight = percentage_filled_weight_constant
+        preferred_day_hour_weight = preferred_day_hour_weight_constant
+        raining_weight = raining_weight_constant
+        preferred_facility_weight = preferred_facility_weight_constant
         df["percentage_filled_score"] = ((100 - df["percentage_filled"]) * percentage_filled_weight).round(2) # Taking inverse of percentage_filled since we want to increase the score with lower attendance
 
         df["is_preferred_day_hour_score"] = (df["is_preferred_day_hour"].astype(int)) * preferred_day_hour_weight

@@ -13,6 +13,11 @@ use_hard_coded_recommendations_save_paths = False
 current_week_recommendations_save_path = "../../predictions/Week 16/recommendations.csv"
 next_week_recommendations_save_path = "../../predictions/Week 17/recommendations.csv"
 
+# Weights to use for the optimization function
+percentage_filled_weight_constant = 0.33 # Weight for percentage filled
+preferred_day_hour_weight_constant = 20 # Weight for preferred day and hour
+raining_weight_constant = 5 # Weight for raining
+preferred_facility_weight_constant = 10 # Weight for preferred facility
 
 # List of available facilities
 available_facilities = [
