@@ -3,6 +3,7 @@ from itertools import zip_longest
 import pandas as pd
 import argparse
 import os
+import json
 
 # TODO: This file is long and it might be worth splitting into multiple files (data preprocessing, user input, filtering, optimization, output formatting)
 
@@ -447,12 +448,63 @@ def format_overall_recommendations(df):
         + body
         + "--------------------------------\n"
     )
-    
 
-# Format the recommendations
-# TODO: We may want to format the recommendations into a json object instead of a string so that it is easier to parse and use in the frontend.
-# Perhaps its best to do both and return both the string and the json object.
-# Note scores are included in the text output for debugging, but will not be included in the json.
+# Build the json format for the current and next week recommendations
+# See example of the outputted format at example_recommendations.json which was produced using example command #3
+def build_week_recommendations_json(df):
+    by_category = []
+    # Group the recommendations by exercise category
+    for category, cat_df in df.groupby("optimized_activity_or_exercise_category", sort=False):
+        # Group the recommendations by day of the week
+        # For each day of the week, get the recommendations
+        schedule_entries = []
+        for day, day_df in cat_df.groupby("day_of_week", sort=False):
+            # Get the recommendations for the day
+            options = [
+                {"facility_name": row["facility_name"], "time_of_day": hour_to_ampm(int(row["hour"]))}
+                for _, row in day_df.sort_values("total_score", ascending=False).iterrows()
+            ]
+            schedule_entries.append((day_order.index(day), {"day": day_to_name[day], "options": options}))
+        schedule_entries.sort(key=lambda entry: entry[0])
+        schedule = [entry[1] for entry in schedule_entries]
+        # Add the exercise category to the by_category list
+        by_category.append({
+            "id": category,
+            "label": category,
+            "type": cat_df["recommendation_type"].iloc[0],
+            "schedule": schedule,
+        })
+    # Get the overall recommendations
+    overall_recommendations = collect_overall_recommendations(df)
+    # Sort the overall recommendations by day of the week
+    overall_recommendations.sort(key=lambda x: day_order.index(x["day_of_week"]))
+    # Add the overall recommendations to the overall list
+    overall = [
+        {
+            "day": day_to_name[row["day_of_week"][0]],
+            "activity_or_category": row["optimized_activity_or_exercise_category"],
+            "type": row["recommendation_type"],
+            "facility_name": row["facility_name"],
+            "time_of_day": hour_to_ampm(int(row["hour"])),
+        }
+        for row in overall_recommendations
+    ]
+    return {"by_category": by_category, "overall": overall}
+
+# Format the current and next weeks recommendation JSON
+def build_recommendations_json(current_week_recommendations, next_week_recommendations):
+    return {
+        "current_week": build_week_recommendations_json(current_week_recommendations),
+        "next_week": build_week_recommendations_json(next_week_recommendations),
+    }
+
+# Save the current and next week recommendations to a JSON file
+def save_recommendations_json(payload, path):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+# Format the current and next weeks recommendations for text output
+# Note: Scores are included in the text output for debugging, but will not be included in the JSON.
 def format_activity_category_recommendations(df):
     output = ""
     # Since we have at most 2 recommendations for each day of the week, we can iterate through the first and next row pairs of recommendations
@@ -494,9 +546,11 @@ def format_activity_category_recommendations(df):
                 output += f" or go to {next_facility_name} at {hour_to_ampm(int(next_hour))} for {current_activity_or_category} (Scores; first: {current_total_score}, second: {next_total_score})\n"
             else:
                 output += f"On {day_to_name[current_day_of_week]} go to {current_facility_name} at {hour_to_ampm(int(current_hour))} or {hour_to_ampm(int(next_hour))} for {current_activity_or_category} (Scores; first: {current_total_score}, second: {next_total_score})\n"
+    # Add the overall recommendations to the output
     output += f"\n\n{format_overall_recommendations(df)}"
     return output
 
+# Format the layout current and next week recommendations are contained in
 def format_recommendations_to_print(current_week_recommendations, next_week_recommendations):
     formatted_current_week_recommendations = format_activity_category_recommendations(current_week_recommendations)
     formatted_next_week_recommendations = format_activity_category_recommendations(next_week_recommendations)
@@ -512,6 +566,7 @@ def format_recommendations_to_print(current_week_recommendations, next_week_reco
     output += "="*50 + "\n"
     return output
 
+# Gather input from the command line
 def invoke_argparse():
     parser = argparse.ArgumentParser(
         description="Recommend Recreation Center gym times based on user preferences.",
@@ -555,6 +610,13 @@ def main():
     current_week_recommendations.to_csv(f"../../predictions/Week {current_week_number}/recommendations.csv", index=False)
     next_week_recommendations.to_csv(f"../../predictions/Week {next_week_number}/recommendations.csv", index=False)
     print(f"Recommended times saved to CSV files")
+
+    recommendations_json = build_recommendations_json(
+        current_week_recommendations,
+        next_week_recommendations,
+    )
+    save_recommendations_json(recommendations_json, "recommendations.json")
+    print("Recommended times saved to recommendations.json")
 
     # Print the set of formatted recommendations
     formatted_recommendations_to_print = format_recommendations_to_print(current_week_recommendations, next_week_recommendations)
