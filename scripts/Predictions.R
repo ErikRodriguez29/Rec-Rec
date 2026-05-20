@@ -197,6 +197,120 @@ combination_schedule <- all_combinations %>%
 
 
 # ==============================
+# Account for lag features in training data
+# ==============================
+
+library(slider)
+
+attendance_history <- attendance_raw %>%
+  mutate(
+    timestamp = ymd_hms(timestamp),
+    hour = hour(timestamp),
+    day_of_week = factor(
+      day_of_week,
+      levels = 0:6,
+      labels = days_of_week
+    ),
+    facility_name = factor(facility_name)
+  ) %>%
+  filter(facility_name != "Racquetball Court 5") %>%
+  filter(
+    (facility_name %in% pool_hours_facilities & (
+      (day_of_week %in% c("M", "T", "W", "R", "F") & hour %in% pool_hours_m_f) |
+        (day_of_week %in% c("S", "U") & hour %in% pool_hours_s_u)
+    )) |
+      (facility_name %in% climb_center_facility & (
+        (day_of_week %in% c("M", "T", "W", "R") & hour %in% climb_hours_m_r) |
+          (day_of_week %in% c("F", "S", "U") & hour %in% climb_hours_f_u)
+      )) |
+      (!(facility_name %in% pool_hours_facilities |
+           facility_name %in% climb_center_facility) & (
+        (day_of_week %in% c("M", "T", "W", "R") & hour %in% standard_hours_m_r) |
+          (day_of_week == "F" & hour %in% standard_hours_f) |
+          (day_of_week == "S" & hour %in% standard_hours_s) |
+          (day_of_week == "U" & hour %in% standard_hours_u)
+      ))
+  ) %>%
+  mutate(
+    week_start = floor_date(
+      as.Date(timestamp),
+      "week",
+      week_start = 1
+    )
+  ) %>%
+  group_by(facility_name, day_of_week, hour, week_start) %>%
+  summarize(
+    current_count = median(current_count, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(facility_name, day_of_week, hour, week_start) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  mutate(
+    lag_1w = lag(current_count, 1L),
+    roll_4w = slide_dbl(
+      current_count,
+      mean,
+      .before = 3,
+      .complete = TRUE
+    )
+  ) %>%
+  ungroup()
+
+# Latest observed week at or before ref_week (sparse slots often miss ref_week exactly)
+lag_lookup_for_week <- function(history, ref_week) {
+  history %>%
+    filter(week_start <= ref_week) %>%
+    arrange(facility_name, day_of_week, hour, week_start) %>%
+    group_by(facility_name, day_of_week, hour) %>%
+    slice_tail(n = 1) %>%
+    ungroup() %>%
+    transmute(
+      facility_name,
+      day_of_week,
+      hour,
+      # For week n+1, training uses prior-slot count = last week n's observed count
+      lag_1w = current_count,
+      roll_4w = roll_4w
+    )
+}
+
+slot_lag_medians <- attendance_history %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(
+    lag_1w_med = median(current_count, na.rm = TRUE),
+    roll_4w_med = median(roll_4w, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+join_slot_lags <- function(pred_data, history) {
+  pred_data %>%
+    mutate(
+      facility_name = as.character(facility_name),
+      day_of_week = factor(day_of_week, levels = days_of_week),
+      ref_week = floor_date(
+        as.Date(format(timestamp, "%Y-%m-%d", tz = "America/Los_Angeles")),
+        "week",
+        week_start = 1
+      ) - weeks(1)
+    ) %>%
+    left_join(
+      purrr::map_dfr(unique(.$ref_week), function(rw) {
+        lag_lookup_for_week(history, rw) %>% mutate(ref_week = rw)
+      }),
+      by = c("facility_name", "day_of_week", "hour", "ref_week")
+    ) %>%
+    left_join(slot_lag_medians, by = c("facility_name", "day_of_week", "hour")) %>%
+    mutate(
+      lag_1w = coalesce(lag_1w, lag_1w_med),
+      roll_4w = coalesce(roll_4w, roll_4w_med),
+      lag_1w = coalesce(lag_1w, median(history$current_count, na.rm = TRUE)),
+      roll_4w = coalesce(roll_4w, median(history$roll_4w, na.rm = TRUE))
+    ) %>%
+    select(-ref_week, -lag_1w_med, -roll_4w_med)
+}
+
+
+# ==============================
 # BUILD NEXT-WEEK TIMESTAMPS
 # ==============================
 
@@ -368,35 +482,38 @@ forecast_data <- forecast_data %>%
   ) %>%
   select(-w_code)
 
-# Add lag columns to account for the trained workflow (prior-week median per slot)
-join_slot_lags <- function(pred_data, week_start_dt) {
-  lag_lookup <- attendance_raw %>%
+# Add lag columns and facility_type (to account for columns added in the training recipe)
+assign_facility_type <- function(df) {
+  fn <- as.character(df$facility_name)
+  df %>%
     mutate(
-      timestamp = ymd_hms(timestamp),
-      hour = hour(timestamp),
-      day_of_week = factor(day_of_week, levels = 0:6, labels = days_of_week)
-    ) %>%
-    filter(
-      timestamp >= week_start_dt - weeks(1),
-      timestamp < week_start_dt
-    ) %>%
-    group_by(facility_name, day_of_week, hour) %>%
-    summarize(
-      lag_1w = median(current_count, na.rm = TRUE),
-      roll_4w = median(current_count, na.rm = TRUE),
-      .groups = "drop"
-    )
-
-  pred_data %>%
-    left_join(lag_lookup, by = c("facility_name", "day_of_week", "hour")) %>%
-    mutate(
-      lag_1w = coalesce(lag_1w, median(lag_1w, na.rm = TRUE)),
-      roll_4w = coalesce(roll_4w, median(roll_4w, na.rm = TRUE))
+      facility_type = factor(
+        case_when(
+          grepl("Racquetball|Squash", fn) ~ "court",
+          grepl("Gym Court|Pavilion", fn) ~ "gym_court",
+          grepl("Outdoor Fitness|Pool", fn) ~ "outdoor",
+          grepl("Climbing", fn) ~ "climbing",
+          grepl("FC|MAC", fn) ~ "functional_training",
+          grepl("Spa", fn) ~ "spa",
+          TRUE ~ "other"
+        ),
+        levels = c(
+          "court",
+          "gym_court",
+          "outdoor",
+          "climbing",
+          "functional_training",
+          "spa",
+          "other"
+        )
+      )
     )
 }
 
-current_week_data <- join_slot_lags(current_week_data, current_monday_dt)
-forecast_data <- join_slot_lags(forecast_data, next_monday_dt)
+current_week_data <- join_slot_lags(current_week_data, attendance_history) %>%
+  assign_facility_type()
+forecast_data <- join_slot_lags(forecast_data, attendance_history) %>%
+  assign_facility_type()
 
 # ==============================
 # EXERCISE CATEGORIES

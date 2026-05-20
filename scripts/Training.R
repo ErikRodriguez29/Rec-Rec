@@ -230,6 +230,36 @@ attendance <- attendance %>%
   ungroup() %>%
   arrange(timestamp)
 
+# Facility groups (grepl works in recipes; str_detect from stringr does not)
+assign_facility_type <- function(df) {
+  fn <- as.character(df$facility_name)
+  df %>%
+    mutate(
+      facility_type = factor(
+        case_when(
+          grepl("Racquetball|Squash", fn) ~ "court",
+          grepl("Gym Court|Pavilion", fn) ~ "gym_court",
+          grepl("Outdoor Fitness|Pool", fn) ~ "outdoor",
+          grepl("Climbing", fn) ~ "climbing",
+          grepl("FC|MAC", fn) ~ "functional_training",
+          grepl("Spa", fn) ~ "spa",
+          TRUE ~ "other"
+        ),
+        levels = c(
+          "court",
+          "gym_court",
+          "outdoor",
+          "climbing",
+          "functional_training",
+          "spa",
+          "other"
+        )
+      )
+    )
+}
+
+attendance <- assign_facility_type(attendance)
+
 # Training/testing split/folds
 
 attendance_split_ts <- attendance %>%
@@ -255,7 +285,8 @@ ts_folds <- time_series_cv(
 
 
 attendance_recipe_ts <- recipe(
-  current_count ~ hour + day_of_week + facility_name + is_raining + lag_1w + roll_4w,
+  current_count ~ hour + day_of_week + facility_name + facility_type +
+    is_raining + lag_1w + roll_4w,
   data = train_data_ts
 ) %>%
   step_unknown(is_raining) %>%
@@ -265,14 +296,13 @@ attendance_recipe_ts <- recipe(
 
 
 
-# Model setup (boosted trees only)
-# 
-# BOOSTED TREES
+# Model setup
+
 # Tuning trees, learn_rate (the learning rate), and min_n
 library(bonsai)
 boosted_model <- boost_tree(trees = tune(),
                             learn_rate = tune(),
-                            min_n = 10) %>%
+                            min_n = tune()) %>%
   set_engine("xgboost") %>%
   set_mode("regression")
 
