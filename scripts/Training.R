@@ -39,9 +39,10 @@ if (!dir.exists(model_dir)) {
 
 
 # Multiprocessing training with future
-library(doParallel)
-all_cores <- parallel::detectCores(logical = FALSE)
-registerDoParallel(cores = all_cores)
+library(future)
+library(doFuture)
+plan(multisession, workers = parallel::detectCores(logical = FALSE))
+registerDoFuture()
 
 
 # Loading
@@ -206,7 +207,28 @@ attendance <- attendance %>%
 attendance <- attendance %>%
   arrange(timestamp)
 
-
+# Add lag features: same facility + day_of_week + hour, previous week in time
+library(slider)
+attendance <- attendance %>%
+  arrange(facility_name, timestamp) %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  mutate(
+    lag_1w  = lag(current_count, 1L),
+    roll_4w = slider::slide_dbl(
+      current_count,
+      mean,
+      .before = 3,
+      .complete = TRUE
+    )
+  ) %>%
+  ungroup() %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  mutate(
+    lag_1w  = if_else(is.na(lag_1w),  median(lag_1w,  na.rm = TRUE), lag_1w),
+    roll_4w = if_else(is.na(roll_4w), median(roll_4w, na.rm = TRUE), roll_4w)
+  ) %>%
+  ungroup() %>%
+  arrange(timestamp)
 
 # Training/testing split/folds
 
@@ -225,42 +247,32 @@ ts_folds <- time_series_cv(
   data       = train_data_ts,
   date_var   = timestamp,
   assess     = "1 week",   # each fold's assessment window
-  initial    = "16 days",  # minimum training window per fold
+  initial    = "21 days",  # minimum training window per fold
   skip       = "1 week",
-  slice_limit = 10,         # number of folds
+  slice_limit = 8,         # number of folds
   cumulative = TRUE
 )
 
 
 attendance_recipe_ts <- recipe(
-  current_count ~ hour + day_of_week + facility_name + is_raining,
+  current_count ~ hour + day_of_week + facility_name + is_raining + lag_1w + roll_4w,
   data = train_data_ts
 ) %>%
   step_unknown(is_raining) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_zv(all_predictors()) %>%
-  step_normalize(all_numeric_predictors())
+  step_normalize(all_numeric_predictors(), -lag_1w, -roll_4w)
 
 
 
-# Model setup (Only gonna do rf/boosted here)
-
-
-
-# RANDOM FOREST
-# Tuning mtry (number of predictors), trees, and min_n (number of minimum values in each node)
-rf_model <- rand_forest(mtry = tune(), 
-                        trees = tune(), 
-                        min_n = tune()
-) %>% 
-  set_engine("ranger", importance = "impurity") %>%
-  set_mode("regression")
-
+# Model setup (boosted trees only)
+# 
 # BOOSTED TREES
 # Tuning trees, learn_rate (the learning rate), and min_n
+library(bonsai)
 boosted_model <- boost_tree(trees = tune(),
                             learn_rate = tune(),
-                            min_n = tune()) %>%
+                            min_n = 10) %>%
   set_engine("xgboost") %>%
   set_mode("regression")
 
@@ -268,15 +280,15 @@ boosted_model <- boost_tree(trees = tune(),
 library(finetune)
 
 # Combine workflows into a set
-model_set <- 
+model_set <-
   workflow_set(
     preproc = list(base_rec = attendance_recipe_ts),
-    models = list(rf = rf_model, boosted = boosted_model)
+    models = list(boosted = boosted_model)
   )
 
 # Define a racing control object (this drops poor hyperparameter combos early)
 race_ctrl <- control_race(
-  save_pred = TRUE,
+  save_pred = FALSE,
   parallel_over = "everything",
   save_workflow = TRUE,
   verbose = TRUE,       # Show general progress
@@ -315,12 +327,20 @@ model_rankings <- rank_results(race_results, rank_metric = "rmse", select_best =
 best_model_id  <- model_rankings$wflow_id[1]
 best_model_type <- model_rankings$model[1]
 
-print(paste("The winner is:", best_model_type, "with ID:", best_model_id))
-
-# 2. Extract the best parameters for that specific winner
-best_params <- race_results %>% 
-  extract_workflow_set_result(best_model_id) %>% 
+# 2. Extract the best parameters for the best model (hyperparameters only)
+best_params <- race_results %>%
+  extract_workflow_set_result(best_model_id) %>%
   select_best(metric = "rmse")
+
+# Get the CV (Cross-Validated) RMSE value of the best model
+best_model_rmse <- race_results %>%
+  extract_workflow_set_result(best_model_id) %>%
+  show_best(metric = "rmse", n = 1) %>%
+  dplyr::pull("mean")
+
+cat("Best model parameters:\n")
+print(best_params)
+cat("CV RMSE of best model:", best_model_rmse, "\n")
 
 # 3. Finalize, Fit, and Save
 final_wf_winner <- race_results %>% 
@@ -342,3 +362,41 @@ print(paste(
   "Saved trained model to:",
   model_dir
 ))
+
+
+# Export all candidates ranked by CV RMSE (best = lowest) to model_dir
+all_candidates <- purrr::map_dfr(
+  unique(race_results$wflow_id),
+  function(wid) {
+    race_results %>%
+      extract_workflow_set_result(wid) %>%
+      show_best(metric = "rmse", n = Inf) %>%
+      mutate(wflow_id = wid, .before = 1)
+  }
+) %>%
+  arrange(mean)
+
+race_export <- all_candidates %>%
+  dplyr::select(
+    wflow_id,
+    dplyr::any_of("model"),
+    trees,
+    learn_rate,
+    min_n,
+    rmse = mean,
+    std_err,
+    n
+  )
+
+race_results_path <- file.path(model_dir, "race_results.txt")
+readr::write_csv(race_export, file.path(model_dir, "race_results.csv"))
+writeLines(
+  c(
+    paste("Race results — CV RMSE ranked best to worst (Week", current_week, ")"),
+    paste("Generated:", Sys.time()),
+    "",
+    capture.output(print(race_export, n = Inf, width = Inf))
+  ),
+  con = race_results_path
+)
+print(paste("Wrote race results to:", race_results_path))
