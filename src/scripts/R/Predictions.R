@@ -293,20 +293,35 @@ forecast_data <- forecast_data %>%
   ) %>%
   select(-w_code)
 
-current_week_data <- join_slot_lags(
-  current_week_data,
-  attendance_history,
-  slot_lag_medians,
-  days_of_week
-) %>%
-  assign_facility_type()
-forecast_data <- join_slot_lags(
-  forecast_data,
-  attendance_history,
-  slot_lag_medians,
-  days_of_week
-) %>%
-  assign_facility_type()
+# Add lag columns to account for the trained workflow (prior-week median per slot)
+join_slot_lags <- function(pred_data, week_start_dt) {
+  lag_lookup <- attendance_raw %>%
+    mutate(
+      timestamp = ymd_hms(timestamp),
+      hour = hour(timestamp),
+      day_of_week = factor(day_of_week, levels = 0:6, labels = days_of_week)
+    ) %>%
+    filter(
+      timestamp >= week_start_dt - weeks(1),
+      timestamp < week_start_dt
+    ) %>%
+    group_by(facility_name, day_of_week, hour) %>%
+    summarize(
+      lag_1w = median(current_count, na.rm = TRUE),
+      roll_4w = median(current_count, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  pred_data %>%
+    left_join(lag_lookup, by = c("facility_name", "day_of_week", "hour")) %>%
+    mutate(
+      lag_1w = coalesce(lag_1w, median(lag_1w, na.rm = TRUE)),
+      roll_4w = coalesce(roll_4w, median(roll_4w, na.rm = TRUE))
+    )
+}
+
+current_week_data <- join_slot_lags(current_week_data, current_monday_dt)
+forecast_data <- join_slot_lags(forecast_data, next_monday_dt)
 
 # ==============================
 # EXERCISE CATEGORIES
