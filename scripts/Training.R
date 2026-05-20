@@ -3,27 +3,20 @@ library(tidyverse)
 library(tidymodels)
 library(timetk)
 
+for (path in c("utils.R", file.path("scripts", "utils.R"))) {
+  if (file.exists(path)) {
+    source(path)
+    break
+  }
+}
+
 # ==============================
 # WEEK DIRECTORY HANDLING
 # ==============================
 
-week1_start <- as.Date("2026-01-26")
-today_date <- Sys.Date()
-
-# Find Monday of current week
-current_monday <- today_date -
-  lubridate::wday(today_date, week_start = 1) + 1
-
-# Find Monday of Week 1
-week1_monday <- week1_start -
-  lubridate::wday(week1_start, week_start = 1) + 1
-
-# Calculate current week number
-current_week <- as.integer(
-  difftime(current_monday,
-           week1_monday,
-           units = "weeks")
-) + 1
+week_info <- get_week_info()
+current_week <- week_info$current_week
+current_monday <- week_info$current_monday
 
 # Model save path
 model_dir <- paste0(
@@ -49,21 +42,11 @@ registerDoFuture()
 
 attendance_raw <- read_csv("../data/facility_counts.csv")
 
-# Single character days of week labels used, where 0 corresponds to Monday, 6 to Sunday
-days_of_week = c("M", "T", "W", "R", "F", "S", "U")
+days_of_week <- DAYS_OF_WEEK
 
 attendance <- attendance_raw %>%
-  mutate(
-    # Parse the timestamp and pull the hour
-    timestamp = ymd_hms(timestamp),
-    hour = hour(timestamp),
-    # Label day of the week from Monday through Sunday
-    day_of_week = factor(day_of_week, levels = 0:6, labels = days_of_week),
-    facility_name = factor(facility_name),
-    is_raining = factor(is_raining)
-  ) %>%
-  # Arrange all observations alphabetically and by ascending timestamp
-  arrange(facility_name, timestamp)
+  parse_attendance_timestamps(days_of_week = days_of_week) %>%
+  mutate(is_raining = factor(is_raining))
 
 
 
@@ -71,52 +54,9 @@ attendance <- attendance_raw %>%
 facility_capacities <- attendance_raw %>%
   distinct(facility_name, total_capacity)
 
-pool_hours_facilities <- c("Small Pool",
-                           "Big Pool",
-                           "Spa",
-                           "Pool Deck"
-)
-climb_center_facility <- c("Climbing Center - MAC")
-
-# Standard facility hours throughout the week (named by their weekday character)
-# In the case a facility closes at an exact hour, we exclude that final hour (i.e 6am - 11pm means we would exclude 11pm or hour 23)
-standard_hours_m_r <- 6:22 #M-T 6am - 11pm
-standard_hours_f <- 6:20 #F 6am - 9pm
-standard_hours_s <- 9:20 #S 9am - 9pm
-standard_hours_u <- 9:20 #U 9am - 10pm
-
-# Pool hours only vary on weekdays and weekends
-pool_hours_m_f <- 6:19 #F 6am - 9pm
-pool_hours_s_u <- 9:19 #S-U 9am - 8pm
-
-# Climbing center hours only reduced from Friday through Sunday
-climb_hours_m_r <- 11:21 #M-R 11:30am - 10pm
-climb_hours_f_u <- 11:20 #F-U 11:30am - 8:30pm
-
 attendance <- attendance %>%
-  # Remove Racquetball Court 5
-  filter(facility_name != "Racquetball Court 5") %>%
-  mutate(facility_name = fct_drop(facility_name)) %>% 
-  filter(
-    # Logic for Pool Facilities
-    (facility_name %in% pool_hours_facilities & (
-      (day_of_week %in% c("M", "T", "W", "R", "F") & hour %in% pool_hours_m_f) |
-        (day_of_week %in% c("S", "U") & hour %in% pool_hours_s_u)
-    )) |
-      # Logic for Climbing Center
-      (facility_name %in% climb_center_facility & (
-        (day_of_week %in% c("M", "T", "W", "R") & hour %in% climb_hours_m_r) |
-          (day_of_week %in% c("F", "S", "U") & hour %in% climb_hours_f_u)
-      )) |
-      # Logic for Standard Facilities (all others)
-      (!(facility_name %in% pool_hours_facilities | facility_name %in% climb_center_facility) & (
-        (day_of_week %in% c("M", "T", "W", "R") & hour %in% standard_hours_m_r) |
-          (day_of_week == "F" & hour %in% standard_hours_f) |
-          (day_of_week == "S" & hour %in% standard_hours_s) |
-          (day_of_week == "U" & hour %in% standard_hours_u)
-      ))
-  ) %>%
-  filter(facility_name != "Racquetball Court 5")
+  mutate(facility_name = fct_drop(facility_name)) %>%
+  filter_to_open_hours()
 
 
 # 1. Create all combinations of hours, days, facilities
@@ -128,27 +68,7 @@ all_combinations <- expand.grid(
 
 # 2. Apply the open hour filter to all combinations
 combination_schedule <- all_combinations %>%
-  filter(
-    # Logic for Pool Facilities
-    (facility_name %in% pool_hours_facilities & (
-      (day_of_week %in% c("M", "T", "W", "R", "F") & hour %in% pool_hours_m_f) |
-        (day_of_week %in% c("S", "U") & hour %in% pool_hours_s_u)
-    )) |
-      # Logic for Climbing Center
-      (facility_name %in% climb_center_facility & (
-        (day_of_week %in% c("M", "T", "W", "R") & hour %in% climb_hours_m_r) |
-          (day_of_week %in% c("F", "S", "U") & hour %in% climb_hours_f_u)
-      )) |
-      # Logic for Standard Facilities (all others)
-      (!(facility_name %in% pool_hours_facilities | facility_name %in% climb_center_facility) & (
-        (day_of_week %in% c("M", "T", "W", "R") & hour %in% standard_hours_m_r) |
-          (day_of_week == "F" & hour %in% standard_hours_f) |
-          (day_of_week == "S" & hour %in% standard_hours_s) |
-          (day_of_week == "U" & hour %in% standard_hours_u)
-      ))
-  ) %>%
-  filter(facility_name != "Racquetball Court 5") %>%
-  # Also: Join the total capacities to the combination schedule so we can use then to calculate percentage later.
+  filter_to_open_hours() %>%
   left_join(facility_capacities, by = "facility_name")
 
 #3. Join the combination schedule to the attendance dataset
@@ -207,57 +127,7 @@ attendance <- attendance %>%
 attendance <- attendance %>%
   arrange(timestamp)
 
-# Add lag features: same facility + day_of_week + hour, previous week in time
-library(slider)
-attendance <- attendance %>%
-  arrange(facility_name, timestamp) %>%
-  group_by(facility_name, day_of_week, hour) %>%
-  mutate(
-    lag_1w  = lag(current_count, 1L),
-    roll_4w = slider::slide_dbl(
-      current_count,
-      mean,
-      .before = 3,
-      .complete = TRUE
-    )
-  ) %>%
-  ungroup() %>%
-  group_by(facility_name, day_of_week, hour) %>%
-  mutate(
-    lag_1w  = if_else(is.na(lag_1w),  median(lag_1w,  na.rm = TRUE), lag_1w),
-    roll_4w = if_else(is.na(roll_4w), median(roll_4w, na.rm = TRUE), roll_4w)
-  ) %>%
-  ungroup() %>%
-  arrange(timestamp)
-
-# Facility groups (grepl works in recipes; str_detect from stringr does not)
-assign_facility_type <- function(df) {
-  fn <- as.character(df$facility_name)
-  df %>%
-    mutate(
-      facility_type = factor(
-        case_when(
-          grepl("Racquetball|Squash", fn) ~ "court",
-          grepl("Gym Court|Pavilion", fn) ~ "gym_court",
-          grepl("Outdoor Fitness|Pool", fn) ~ "outdoor",
-          grepl("Climbing", fn) ~ "climbing",
-          grepl("FC|MAC", fn) ~ "functional_training",
-          grepl("Spa", fn) ~ "spa",
-          TRUE ~ "other"
-        ),
-        levels = c(
-          "court",
-          "gym_court",
-          "outdoor",
-          "climbing",
-          "functional_training",
-          "spa",
-          "other"
-        )
-      )
-    )
-}
-
+attendance <- add_panel_lag_features(attendance)
 attendance <- assign_facility_type(attendance)
 
 # Training/testing split/folds

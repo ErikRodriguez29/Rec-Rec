@@ -4,25 +4,18 @@ library(lubridate)
 library(skimr)
 library(shadowtext)
 
-#save_path <- "EDA/Week 10/"
+for (path in c("utils.R", file.path("scripts", "utils.R"))) {
+  if (file.exists(path)) {
+    source(path)
+    break
+  }
+}
+
 # ==============================
 # AUTO WEEK DIRECTORY HANDLING
 # ==============================
 
-# Week 1 starts January 26, 2026
-week1_start <- as.Date("2026-01-26")
-
-# Get today's date
-today_date <- Sys.Date()
-
-# Find Monday of current week
-current_monday <- today_date - lubridate::wday(today_date, week_start = 1) + 1
-
-# Find Monday of Week 1
-week1_monday <- week1_start - lubridate::wday(week1_start, week_start = 1) + 1
-
-# Calculate week number
-week_number <- as.integer(difftime(current_monday, week1_monday, units = "weeks")) + 1
+week_number <- get_week_info()$current_week
 
 # Build directory path
 save_path <- file.path("..", "EDA", paste0("Week ", week_number))
@@ -44,11 +37,10 @@ attendance <- attendance_cleaned %>%
   mutate( 
     timestamp = ymd_hms(timestamp), 
     hour = hour(timestamp), 
-    day_of_week = factor(day_of_week, levels = 0:6, labels = c("M", "T", "W", "R", "F", "S", "U")), 
+    day_of_week = factor(day_of_week, levels = 0:6, labels = DAYS_OF_WEEK), 
     facility_name = factor(facility_name) ) %>% 
   arrange(facility_name, timestamp) 
 skim(attendance)
-
 
 # 1 Average fullness of all Facilities
 attendance %>%
