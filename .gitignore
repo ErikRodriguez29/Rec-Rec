@@ -14,7 +14,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .env
-.env.*
 *.bak
 src/scripts/raw.json
 src/scripts/recommender/recommendations.json
