@@ -5,8 +5,9 @@ library(timetk)
 
 for (path in c(
   "utils.R",
-  file.path("scripts", "utils.R"),
-  file.path("src", "scripts", "utils.R")
+  file.path("R", "utils.R"),
+  file.path("scripts", "R", "utils.R"),
+  file.path("src", "scripts", "R", "utils.R")
 )) {
   if (file.exists(path)) {
     source(path)
@@ -26,7 +27,7 @@ current_monday <- week_info$current_monday
 
 # Model save path
 model_dir <- paste0(
-  "../tuned_models/Week ",
+  "../../tuned_models/Week ",
   current_week,
   "/"
 )
@@ -40,13 +41,16 @@ if (!dir.exists(model_dir)) {
 # Multiprocessing training with future
 library(future)
 library(doFuture)
-plan(multisession, workers = parallel::detectCores(logical = FALSE))
+n_workers <- min(4L, max(1L, parallel::detectCores(logical = FALSE) - 1L))
+plan(multisession, workers = n_workers)
+options(future.globals.maxSize = 3 * 1024^3)
 registerDoFuture()
+on.exit(plan(sequential), add = TRUE)
 
 
 # Loading
 
-attendance_raw <- read_facility_counts("../data/facility_counts.csv")
+attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
 
 days_of_week <- DAYS_OF_WEEK
 

@@ -6,8 +6,9 @@ library(shadowtext)
 
 for (path in c(
   "utils.R",
-  file.path("scripts", "utils.R"),
-  file.path("src", "scripts", "utils.R")
+  file.path("R", "utils.R"),
+  file.path("scripts", "R", "utils.R"),
+  file.path("src", "scripts", "R", "utils.R")
 )) {
   if (file.exists(path)) {
     source(path)
@@ -22,7 +23,7 @@ for (path in c(
 week_number <- get_week_info()$current_week
 
 # Build directory path
-save_path <- file.path("..", "EDA", paste0("Week ", week_number))
+save_path <- file.path("../..", "EDA", paste0("Week ", week_number))
 
 # Create directory if it doesn't exist
 if (!dir.exists(save_path)) {
@@ -32,7 +33,7 @@ if (!dir.exists(save_path)) {
 can_save <- TRUE
 
 
-attendance_raw <- read_facility_counts("../data/facility_counts.csv")
+attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
 attendance_cleaned <- na.omit(attendance_raw)
 attendance <- attendance_cleaned %>%
   mutate(

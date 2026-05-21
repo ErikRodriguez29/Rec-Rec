@@ -3,7 +3,7 @@
 The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation Center facility occupancy and recommends gym times based on user preferred activities, exercise categories, schedule, and facilities. The recommender system does the following:
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
-2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R`, `Training.R`, `Predictions.R`).
+2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R`,`Training.R`, `Predictions.R`).
 3. Recommends personalized weekly times to go to the gym that minimizes attendance while respecting user preferences, maximizing the chances of the user finding their preferred machines for their workout routines (`recommend-times.py`).
 4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (in progress).
 
@@ -11,14 +11,15 @@ The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation C
 
 ### Data
 
-Place your dataset on `facility_counts.csv` in `src/data/`. A dataset can be retrieved using the python script:
+Place your dataset on `facility_counts.csv` in the `src/data/` folder. A dataset can be retrieved using the python script:
 
 ```bash
 python src/scripts/facility-counts.py
 ```
 ### Forecast data generation
 
-From `src/scripts/`, install the required packages with `renv::restore()`, then run the following scripts in order: `EDA.R`, `Training.R`, `Predictions.R`
+From `src/scripts/`, install the required packages with `renv::restore()`, then run the following scripts in 
+order: `EDA.R`, `Training.R`, `Predictions.R`
 
 Install the required packages:
 ```bash
@@ -27,17 +28,17 @@ renv::restore()
 
 Generate the EDA plots:
 ```bash
-Rscript src/scripts/EDA.R
+Rscript src/scripts/R/EDA.R
 ```
 
 Train a model:
 ```bash
-Rscript src/scripts/Training.R
+Rscript src/scripts/R/Training.R
 ```
 
 Generate predictions:
 ```bash
-Rscript src/scripts/Predictions.R
+Rscript src/scripts/R/Predictions.R
 ```
 
 **Outputs:** where n is the week number since the starting week from Janurary 26, 2026 (where the first week, n=1):
@@ -84,13 +85,11 @@ src/
   data/                # facility_counts.csv and cached weather data go here
   predictions/Week {n}/  # forecast_values.csv, recommendations.csv, ...
   scripts/
-    EDA.R
-    Training.R
-    Predictions.R
+    R/                   # EDA.R, Training.R, Predictions.R, renv
     facility-counts.py
-    recommender/       # Python recommender modules + recommend-times.py
-  tuned_models/        # saved R model workflows (from Training.R)
-  EDA/Week {n}/        # saved weekly occupancy plots go here
+    recommender/         # Python recommender modules + recommend-times.py
+  tuned_models/          # saved R model workflows (from Training.R)
+  EDA/Week {n}/          # saved weekly occupancy plots go here
 ```
 
 For more details on the scripts, see: [`src/scripts/README.md`](src/scripts/README.md).
