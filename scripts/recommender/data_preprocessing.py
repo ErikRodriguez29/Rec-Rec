@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-
 from constants import (
     anchor_monday,
     current_week_load_path,
@@ -11,6 +10,7 @@ from constants import (
 
 # Data preprocessing functions
 
+
 # Get the current and next week numbers
 def get_current_next_week_numbers():
     today = datetime.now().date()
@@ -18,12 +18,14 @@ def get_current_next_week_numbers():
     week_no = ((monday - anchor_monday).days // 7) - 1
     return week_no, week_no + 1
 
+
 # Split a specified column into a list of values (separated by "; ")
 def split_column_to_list(df, column, new_column):
     def parse_items(s):
         if pd.isna(s):
             return []
         return [part.strip() for part in str(s).split("; ") if part.strip()]
+
     output = df.copy()
     output[new_column] = output[column].map(parse_items)
     return output
@@ -35,12 +37,24 @@ def load_data(current_week_number, next_week_number):
         current_week_forecast = pd.read_csv(current_week_load_path)
         next_week_forecast = pd.read_csv(next_week_load_path)
     else:
-        current_week_forecast = pd.read_csv(f"../../predictions/Week {current_week_number}/forecast_values.csv")
-        next_week_forecast = pd.read_csv(f"../../predictions/Week {next_week_number}/forecast_values.csv")
+        current_week_forecast = pd.read_csv(
+            f"../../predictions/Week {current_week_number}/forecast_values.csv"
+        )
+        next_week_forecast = pd.read_csv(
+            f"../../predictions/Week {next_week_number}/forecast_values.csv"
+        )
     # Split the exercise categories and activites into a list for the current week's forecast
-    current_week_forecast = split_column_to_list(current_week_forecast, "categories", "category_list")
-    current_week_forecast = split_column_to_list(current_week_forecast, "activities", "activity_list")
+    current_week_forecast = split_column_to_list(
+        current_week_forecast, "categories", "category_list"
+    )
+    current_week_forecast = split_column_to_list(
+        current_week_forecast, "activities", "activity_list"
+    )
     # Split the exercise categories and activites into a list for the next week's forecast
-    next_week_forecast = split_column_to_list(next_week_forecast, "categories", "category_list")
-    next_week_forecast = split_column_to_list(next_week_forecast, "activities", "activity_list")
+    next_week_forecast = split_column_to_list(
+        next_week_forecast, "categories", "category_list"
+    )
+    next_week_forecast = split_column_to_list(
+        next_week_forecast, "activities", "activity_list"
+    )
     return current_week_forecast, next_week_forecast

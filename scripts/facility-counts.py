@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 import csv
-import time
-import sys
 import json
+import sys
+import time
 from datetime import datetime
+
 import requests
 
 URL = "https://goboardapi.azurewebsites.net/api/FacilityCount/GetCountsByAccount?AccountAPIKey=9ff6a29d-9ef2-4d75-97ea-187f31ac0025"
 CSV_FILE = "facility_counts.csv"
-INTERVAL_SECONDS = 5 * 60 # Every 5 Minutes
+INTERVAL_SECONDS = 5 * 60  # Every 5 Minutes
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_LATITUDE = 34.4140
-OPEN_METEO_LONGITUDE = -119.8489 # UCSB Coordinates
+OPEN_METEO_LONGITUDE = -119.8489  # UCSB Coordinates
 
 
 def parse_api_timestamp(value: object) -> datetime | None:
@@ -106,13 +107,13 @@ def scrape_facility_counts(data, *, is_raining: bool | None):
         dt = parse_api_timestamp(item.get("LastUpdatedDateAndTime"))
         if dt is None:
             continue
-        
+
         # Set current count equal to last count (Idk if this is right or if last count refers to the previous timestamp, but seems right based on percentage values on the website)
         current_count = item.get("LastCount", "N/A")
-        
+
         # Get total_capacity from the API
         total_capacity = item.get("TotalCapacity", 0)
-        
+
         # Calculate percentage_filled
         try:
             current_count_float = float(current_count)
@@ -124,20 +125,22 @@ def scrape_facility_counts(data, *, is_raining: bool | None):
                 percentage_filled_str = "0.00"
         except (ValueError, ZeroDivisionError):
             percentage_filled_str = "0.00"
-        
-        formatted_timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        formatted_timestamp = dt.strftime("%Y-%m-%d %H:%M:%S")
         day_of_week = dt.weekday()
 
-        facilities.append({
-            'facility_name': location_name,
-            'current_count': str(current_count),
-            'total_capacity': str(total_capacity),
-            'percentage_filled': percentage_filled_str,
-            'timestamp': formatted_timestamp,
-            'day_of_week': day_of_week,
-            'is_raining': is_raining
-        })
-    
+        facilities.append(
+            {
+                "facility_name": location_name,
+                "current_count": str(current_count),
+                "total_capacity": str(total_capacity),
+                "percentage_filled": percentage_filled_str,
+                "timestamp": formatted_timestamp,
+                "day_of_week": day_of_week,
+                "is_raining": is_raining,
+            }
+        )
+
     return facilities
 
 
@@ -158,11 +161,11 @@ def load_existing_keys(filename: str) -> set[tuple[str, str]]:
 
 
 def save_to_csv(facilities, filename=CSV_FILE):
-    if not facilities: 
+    if not facilities:
         return
     file_exists = False
     try:
-        with open(filename, 'r'):
+        with open(filename, "r"):
             file_exists = True
     except FileNotFoundError:
         pass
@@ -170,18 +173,29 @@ def save_to_csv(facilities, filename=CSV_FILE):
     existing_keys = load_existing_keys(filename)
     deduped = []
     for row in facilities:
-        key = (str(row.get("facility_name") or "").strip(), str(row.get("timestamp") or "").strip())
+        key = (
+            str(row.get("facility_name") or "").strip(),
+            str(row.get("timestamp") or "").strip(),
+        )
         if not key[0] or not key[1]:
             continue
         if key in existing_keys:
             continue
         existing_keys.add(key)
         deduped.append(row)
-    
-    with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['facility_name', 'current_count', 'total_capacity', 'percentage_filled', 'timestamp', 'day_of_week', 'is_raining']
+
+    with open(filename, "a", newline="", encoding="utf-8") as csvfile:
+        fieldnames = [
+            "facility_name",
+            "current_count",
+            "total_capacity",
+            "percentage_filled",
+            "timestamp",
+            "day_of_week",
+            "is_raining",
+        ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
-        if not file_exists: 
+        if not file_exists:
             writer.writeheader()
         writer.writerows(deduped)
 
@@ -200,19 +214,19 @@ def main():
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
             facilities = scrape_facility_counts(data, is_raining=is_raining)
-            
+
             if facilities:
                 save_to_csv(facilities)
                 print(f"Successfully scraped {len(facilities)} facilities")
             else:
                 print(f"No data found.")
-            
+
             time.sleep(INTERVAL_SECONDS)
         except KeyboardInterrupt:
             sys.exit(0)
         except Exception as e:
             print(f"Unexpected error: {e}")
-            time.sleep(60) # Wait a minute before retry if crashed
+            time.sleep(60)  # Wait a minute before retry if crashed
 
 
 if __name__ == "__main__":

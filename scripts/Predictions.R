@@ -2,33 +2,22 @@ library(tidyverse)
 library(tidymodels)
 library(lubridate)
 
+for (path in c("utils.R", file.path("scripts", "utils.R"))) {
+  if (file.exists(path)) {
+    source(path)
+    break
+  }
+}
+
 # ==============================
 # WEEK HANDLING
-#==============================
+# ==============================
 
-week1_start <- as.Date("2026-01-26")
-today_date <- Sys.Date()
-
-# Current Monday
-current_monday <- today_date -
-  lubridate::wday(today_date, week_start = 1) + 1
-
-# Week 1 Monday
-week1_monday <- week1_start -
-  lubridate::wday(week1_start, week_start = 1) + 1
-
-# Current week number
-current_week <- as.integer(
-  difftime(
-    current_monday,
-    week1_monday,
-    units = "weeks"
-  )
-) + 1
-
-# Next week
-next_week <- current_week + 1
-next_monday <- current_monday + weeks(1)
+week_info <- get_week_info()
+current_week <- week_info$current_week
+current_monday <- week_info$current_monday
+next_week <- week_info$next_week
+next_monday <- week_info$next_monday
 
 print(paste(
   "Current week:", current_week
@@ -57,13 +46,11 @@ week_numbers <- as.numeric(
 
 # Handle empty directory case
 if (length(week_numbers) == 0 ||
-    all(is.na(week_numbers))) {
-  
+  all(is.na(week_numbers))) {
   stop(
     "No trained models found in ../tuned_models/.
      Run Training.R first."
   )
-  
 }
 
 latest_week <- max(week_numbers)
@@ -91,7 +78,7 @@ attendance_raw <- read_csv(
   "../data/facility_counts.csv"
 )
 
-days_of_week <- c("M","T","W","R","F","S","U")
+days_of_week <- c("M", "T", "W", "R", "F", "S", "U")
 
 
 # ==============================
@@ -106,7 +93,8 @@ save_path <- paste0(
 
 if (!dir.exists(save_path)) {
   dir.create(save_path,
-             recursive = TRUE)
+    recursive = TRUE
+  )
 }
 
 # ------------------------------
@@ -115,34 +103,6 @@ if (!dir.exists(save_path)) {
 
 facility_capacities <- attendance_raw %>%
   distinct(facility_name, total_capacity)
-
-
-# ---- Define facility groups ----
-
-pool_hours_facilities <- c(
-  "Small Pool",
-  "Big Pool",
-  "Spa",
-  "Pool Deck"
-)
-
-climb_center_facility <- c(
-  "Climbing Center - MAC"
-)
-
-
-# ---- Hour definitions ----
-
-standard_hours_m_r <- 6:22
-standard_hours_f   <- 6:20
-standard_hours_s   <- 9:20
-standard_hours_u   <- 9:20
-
-pool_hours_m_f <- 6:19
-pool_hours_s_u <- 9:19
-
-climb_hours_m_r <- 11:21
-climb_hours_f_u <- 11:20
 
 
 # ==============================
@@ -156,40 +116,7 @@ all_combinations <- expand.grid(
 )
 
 combination_schedule <- all_combinations %>%
-  filter(
-    (facility_name %in% pool_hours_facilities & (
-      (day_of_week %in% c("M","T","W","R","F") &
-         hour %in% pool_hours_m_f) |
-        (day_of_week %in% c("S","U") &
-           hour %in% pool_hours_s_u)
-    )) |
-      
-      (facility_name %in% climb_center_facility & (
-        (day_of_week %in% c("M","T","W","R") &
-           hour %in% climb_hours_m_r) |
-          (day_of_week %in% c("F","S","U") &
-             hour %in% climb_hours_f_u)
-      )) |
-      
-      (!(facility_name %in%
-           c(pool_hours_facilities,
-             climb_center_facility)) & (
-               
-               (day_of_week %in% c("M","T","W","R") &
-                  hour %in% standard_hours_m_r) |
-                 
-                 (day_of_week == "F" &
-                    hour %in% standard_hours_f) |
-                 
-                 (day_of_week == "S" &
-                    hour %in% standard_hours_s) |
-                 
-                 (day_of_week == "U" &
-                    hour %in% standard_hours_u)
-               
-             ))
-  ) %>%
-  filter(facility_name != "Racquetball Court 5") %>%
+  filter_to_open_hours() %>%
   left_join(
     facility_capacities,
     by = "facility_name"
@@ -197,10 +124,18 @@ combination_schedule <- all_combinations %>%
 
 
 # ==============================
+# Account for lag features in training data
+# ==============================
+
+attendance_history <- build_attendance_history(attendance_raw, days_of_week)
+slot_lag_medians <- build_slot_lag_medians(attendance_history)
+
+
+# ==============================
 # BUILD NEXT-WEEK TIMESTAMPS
 # ==============================
 
-# Ensure the correct timezone is used for proper hour calculations in 
+# Ensure the correct timezone is used for proper hour calculations in
 # predictions dataset
 next_monday_dt <- as_datetime(next_monday, tz = "America/Los_Angeles")
 
@@ -208,9 +143,8 @@ forecast_data <- combination_schedule %>%
   mutate(
     timestamp =
       next_monday_dt +
-      days(match(day_of_week, days_of_week) - 1) +
-      hours(hour),
-    
+        days(match(day_of_week, days_of_week) - 1) +
+        hours(hour),
     facility_name = factor(facility_name),
     day_of_week = factor(day_of_week, levels = days_of_week)
   )
@@ -224,9 +158,8 @@ current_week_data <- combination_schedule %>%
   mutate(
     timestamp =
       current_monday_dt +
-      days(match(day_of_week, days_of_week) - 1) +
-      hours(hour),
-    
+        days(match(day_of_week, days_of_week) - 1) +
+        hours(hour),
     facility_name = factor(facility_name),
     day_of_week = factor(day_of_week, levels = days_of_week)
   )
@@ -238,7 +171,7 @@ library(httr2)
 library(fs)
 
 current_forecast_start <- as.Date(current_monday)
-current_forecast_end   <- current_forecast_start + days(6)
+current_forecast_end <- current_forecast_start + days(6)
 
 current_cache_file <- paste0(
   "../data/weather_data/cached_weather_week_",
@@ -247,16 +180,13 @@ current_cache_file <- paste0(
 )
 
 if (file_exists(current_cache_file)) {
-  
   message(paste0(
     "Using cached weather data from Week ",
     current_week
   ))
-  
+
   current_weather_data <- readRDS(current_cache_file)
-  
 } else {
-  
   req <- request("https://api.open-meteo.com/v1/forecast") %>%
     req_url_query(
       latitude = 34.4140,
@@ -266,16 +196,16 @@ if (file_exists(current_cache_file)) {
       end_date = as.character(current_forecast_end),
       timezone = "auto"
     )
-  
+
   resp <- req %>%
     req_perform() %>%
     resp_body_json()
-  
+
   current_weather_data <- tibble(
     datetime = ymd_hm(unlist(resp$hourly$time)),
     w_code = unlist(resp$hourly$weather_code)
   )
-  
+
   saveRDS(
     current_weather_data,
     current_cache_file
@@ -310,7 +240,7 @@ current_week_data <- current_week_data %>%
 # Augment true forecast rain values from the open meteo API
 
 forecast_start <- as.Date(next_monday)
-forecast_end   <- forecast_start + days(6)
+forecast_end <- forecast_start + days(6)
 
 # Save the weather into a cache file so that we don't have to make API calls
 # for an already existing week
@@ -329,32 +259,31 @@ if (file_exists(cache_file)) {
 } else {
   # Fetch weather data for UCSB (located 34.4140, -119.8489)
   forecast_start <- as.Date(next_monday)
-  forecast_end   <- forecast_start + days(6)
-  
+  forecast_end <- forecast_start + days(6)
+
   req <- request("https://api.open-meteo.com/v1/forecast") %>%
     req_url_query(
-      latitude = 34.4140, 
+      latitude = 34.4140,
       longitude = -119.8489,
       hourly = "weather_code",
       start_date = as.character(forecast_start),
       end_date = as.character(forecast_end),
       timezone = "auto"
     )
-  
+
   # Perform request and parse JSON
-  resp <- req %>% 
-    req_perform() %>% 
+  resp <- req %>%
+    req_perform() %>%
     resp_body_json()
-  
+
   # Convert JSON arrays into a tidy data frame
   weather_data <- tibble(
     datetime = ymd_hm(unlist(resp$hourly$time)),
     w_code = unlist(resp$hourly$weather_code)
   )
-  
+
   saveRDS(weather_data, cache_file)
 }
-
 
 
 # Augment to forecast_data
@@ -367,6 +296,21 @@ forecast_data <- forecast_data %>%
     is_raining = factor(is_raining, levels = c(FALSE, TRUE))
   ) %>%
   select(-w_code)
+
+current_week_data <- join_slot_lags(
+  current_week_data,
+  attendance_history,
+  slot_lag_medians,
+  days_of_week
+) %>%
+  assign_facility_type()
+forecast_data <- join_slot_lags(
+  forecast_data,
+  attendance_history,
+  slot_lag_medians,
+  days_of_week
+) %>%
+  assign_facility_type()
 
 # ==============================
 # EXERCISE CATEGORIES
@@ -395,10 +339,10 @@ exercise_categories <- tribble(
   "FC 2- Mezzanine", c("cardio", "legs"), c("ellipticals (precor branded machines)", "treadmills"),
   "FC 3 - MAC", c("arms", "cardio", "core", "legs", "weight training"), c("arm machines", "leg presses", "treadmills", "weight crunch machines", "weight lifting"),
   "MAC Court", c("NA"), c("hockey", "skating"), # Idk why this is included in facility counts lol
-  "Spa", c("NA"), c("NA"),                      # Same with this bruh
+  "Spa", c("NA"), c("NA"), # Same with this bruh
   "Small Pool", c("cardio"), c("swimming"),
   "Big Pool", c("cardio"), c("swimming"),
-  "Pool Deck", c("NA"), c("NA"),                # Or this
+  "Pool Deck", c("NA"), c("NA"), # Or this
   "Climbing Center - MAC", c("NA"), c("climbing")
 )
 
@@ -419,17 +363,14 @@ current_predictions <-
   mutate(
     predicted_count =
       pmax(0, round(.pred)),
-    
     percentage_filled =
       (predicted_count /
-         total_capacity) * 100,
-    
+        total_capacity) * 100,
     timestamp =
       format(
         timestamp,
         "%Y-%m-%d %H:%M:%S"
       ),
-    
     is_raining =
       as.logical(as.character(is_raining))
   ) %>%
@@ -465,11 +406,10 @@ forecast_predictions <-
   mutate(
     predicted_count =
       pmax(0, round(.pred)),
-    
     percentage_filled =
       (predicted_count /
-         total_capacity) * 100,
-    
+        total_capacity) * 100,
+
     # FORMAT TIMESTAMP
     timestamp = format(timestamp, "%Y-%m-%d %H:%M:%S"),
     is_raining = as.logical(as.character(is_raining))
@@ -517,13 +457,13 @@ forecast_plot <-
       fill = avg_pct
     )
   ) +
-  geom_tile(color="gray") +
+  geom_tile(color = "gray") +
   scale_fill_gradient2(
-    low="darkgreen",
-    mid="yellow",
-    high="darkred",
-    midpoint=50,
-    limits=c(0,100)
+    low = "darkgreen",
+    mid = "yellow",
+    high = "darkred",
+    midpoint = 50,
+    limits = c(0, 100)
   ) +
   facet_wrap(~facility_name) +
   labs(
@@ -532,14 +472,14 @@ forecast_plot <-
         "Weekly Forecast — Week",
         next_week
       ),
-    x="Hour",
-    y="Day"
+    x = "Hour",
+    y = "Day"
   ) +
   theme_minimal() +
   theme(
-    panel.grid=element_blank(),
-    strip.text=
-      element_text(face="bold")
+    panel.grid = element_blank(),
+    strip.text =
+      element_text(face = "bold")
   )
 
 ggsave(
@@ -595,6 +535,7 @@ write_csv(
 # ==============================
 # FACILITY CATEGORIES
 # ==============================
+# TODO: May want to do these visuals by exercise category, or some other useful grouping instead
 
 facilities_to_include <- c(
   "FC 1 - South Room",
@@ -638,25 +579,25 @@ frequented_plot <-
   ggplot(aes(hour, day_of_week, fill = avg_pct)) +
   geom_tile(color = "gray") +
   scale_fill_gradient2(
-    low="darkgreen",
-    mid="yellow",
-    high="darkred",
-    midpoint=50,
-    limits=c(0,100)
+    low = "darkgreen",
+    mid = "yellow",
+    high = "darkred",
+    midpoint = 50,
+    limits = c(0, 100)
   ) +
-  facet_wrap(~ facility_name) +
+  facet_wrap(~facility_name) +
   labs(
     title = paste(
       "Frequented Facilities Forecast — Week",
       next_week
     ),
-    x="Hour",
-    y="Day"
+    x = "Hour",
+    y = "Day"
   ) +
   theme_minimal() +
   theme(
-    panel.grid=element_blank(),
-    strip.text=element_text(face="bold")
+    panel.grid = element_blank(),
+    strip.text = element_text(face = "bold")
   )
 
 ggsave(
@@ -679,15 +620,15 @@ pool_plot <-
     .groups = "drop"
   ) %>%
   ggplot(aes(hour, day_of_week, fill = avg_pct)) +
-  geom_tile(color="gray") +
+  geom_tile(color = "gray") +
   scale_fill_gradient2(
-    low="darkgreen",
-    mid="yellow",
-    high="darkred",
-    midpoint=50,
-    limits=c(0,100)
+    low = "darkgreen",
+    mid = "yellow",
+    high = "darkred",
+    midpoint = 50,
+    limits = c(0, 100)
   ) +
-  facet_wrap(~ facility_name) +
+  facet_wrap(~facility_name) +
   labs(
     title = paste(
       "Pool Facilities Forecast — Week",
@@ -696,8 +637,8 @@ pool_plot <-
   ) +
   theme_minimal() +
   theme(
-    panel.grid=element_blank(),
-    strip.text=element_text(face="bold")
+    panel.grid = element_blank(),
+    strip.text = element_text(face = "bold")
   )
 
 ggsave(
@@ -713,22 +654,22 @@ ggsave(
 
 climb_plot <-
   forecast_predictions %>%
-  filter(facility_name %in% climb_center_facility) %>%
+  filter(facility_name %in% CLIMB_CENTER_FACILITY) %>%
   group_by(facility_name, day_of_week, hour) %>%
   summarize(
     avg_pct = mean(percentage_filled),
     .groups = "drop"
   ) %>%
   ggplot(aes(hour, day_of_week, fill = avg_pct)) +
-  geom_tile(color="gray") +
+  geom_tile(color = "gray") +
   scale_fill_gradient2(
-    low="darkgreen",
-    mid="yellow",
-    high="darkred",
-    midpoint=50,
-    limits=c(0,100)
+    low = "darkgreen",
+    mid = "yellow",
+    high = "darkred",
+    midpoint = 50,
+    limits = c(0, 100)
   ) +
-  facet_wrap(~ facility_name) +
+  facet_wrap(~facility_name) +
   labs(
     title = paste(
       "Climbing Center Forecast — Week",
@@ -737,7 +678,7 @@ climb_plot <-
   ) +
   theme_minimal() +
   theme(
-    panel.grid=element_blank()
+    panel.grid = element_blank()
   )
 
 ggsave(
@@ -759,15 +700,15 @@ racquetball_plot <-
     .groups = "drop"
   ) %>%
   ggplot(aes(hour, day_of_week, fill = avg_pct)) +
-  geom_tile(color="gray") +
+  geom_tile(color = "gray") +
   scale_fill_gradient2(
-    low="darkgreen",
-    mid="yellow",
-    high="darkred",
-    midpoint=50,
-    limits=c(0,100)
+    low = "darkgreen",
+    mid = "yellow",
+    high = "darkred",
+    midpoint = 50,
+    limits = c(0, 100)
   ) +
-  facet_wrap(~ facility_name) +
+  facet_wrap(~facility_name) +
   labs(
     title = paste(
       "Racquetball & Squash Forecast — Week",
@@ -776,7 +717,7 @@ racquetball_plot <-
   ) +
   theme_minimal() +
   theme(
-    panel.grid=element_blank()
+    panel.grid = element_blank()
   )
 
 ggsave(
@@ -798,15 +739,15 @@ remaining_plot <-
     .groups = "drop"
   ) %>%
   ggplot(aes(hour, day_of_week, fill = avg_pct)) +
-  geom_tile(color="gray") +
+  geom_tile(color = "gray") +
   scale_fill_gradient2(
-    low="darkgreen",
-    mid="yellow",
-    high="darkred",
-    midpoint=50,
-    limits=c(0,100)
+    low = "darkgreen",
+    mid = "yellow",
+    high = "darkred",
+    midpoint = 50,
+    limits = c(0, 100)
   ) +
-  facet_wrap(~ facility_name) +
+  facet_wrap(~facility_name) +
   labs(
     title = paste(
       "Remaining Facilities Forecast — Week",
@@ -815,7 +756,7 @@ remaining_plot <-
   ) +
   theme_minimal() +
   theme(
-    panel.grid=element_blank()
+    panel.grid = element_blank()
   )
 
 ggsave(
