@@ -44,7 +44,7 @@ registerDoFuture()
 
 # Loading
 
-attendance_raw <- read_csv("../data/facility_counts.csv")
+attendance_raw <- read_facility_counts("../data/facility_counts.csv")
 
 days_of_week <- DAYS_OF_WEEK
 
@@ -118,11 +118,14 @@ anchor_date <- attendance %>%
   summarize(min(floor_date(timestamp, "week", week_start = 1))) %>%
   pull()
 
-# Fill NA timestamps with synthetic values built from anchor date + day + hour
+# Fill NA timestamps with synthetic values built from anchor date + day + hour, with offset seconds per facility to prevent duplicate timestamps
 attendance <- attendance %>%
   mutate(timestamp = if_else(
     is.na(timestamp),
-    anchor_date + days(match(day_of_week, days_of_week) - 1) + hours(hour),
+    anchor_date +
+      days(match(day_of_week, days_of_week) - 1) +
+      hours(hour) +
+      seconds(as.integer(facility_name) - 1L),
     timestamp
   ))
 
@@ -193,8 +196,8 @@ model_set <-
 # Define a racing control object (this drops poor hyperparameter combos early)
 race_ctrl <- control_race(
   save_pred = FALSE,
-  parallel_over = "everything",
-  save_workflow = TRUE,
+  parallel_over = "resamples",
+  save_workflow = FALSE,
   verbose = TRUE, # Show general progress
   verbose_elim = TRUE # Show which models are discarded during racing
 )
@@ -205,7 +208,7 @@ race_results <- model_set %>%
   workflow_map(
     "tune_race_anova",
     resamples = ts_folds,
-    grid = 10, # Number of candidate models to try per type
+    grid = 8, # Number of candidate models to try per type
     control = race_ctrl,
     metrics = metric_set(rmse, rsq)
   )

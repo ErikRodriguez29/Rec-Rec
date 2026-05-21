@@ -32,7 +32,7 @@ if (!dir.exists(save_path)) {
 can_save <- TRUE
 
 
-attendance_raw <- read_csv("../data/facility_counts.csv", na = c("N/A"))
+attendance_raw <- read_facility_counts("../data/facility_counts.csv")
 attendance_cleaned <- na.omit(attendance_raw)
 attendance <- attendance_cleaned %>%
   mutate(

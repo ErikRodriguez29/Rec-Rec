@@ -78,9 +78,7 @@ print(paste(
 # (needed to rebuild schedule)
 # ==============================
 
-attendance_raw <- read_csv(
-  "../data/facility_counts.csv"
-)
+attendance_raw <- read_facility_counts("../data/facility_counts.csv")
 
 days_of_week <- c("M", "T", "W", "R", "F", "S", "U")
 

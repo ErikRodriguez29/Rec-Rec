@@ -57,6 +57,24 @@ get_week_info <- function(
 }
 
 
+read_facility_counts <- function(path) {
+  readr::read_csv(
+    path,
+    na = c("N/A", ""),
+    col_types = readr::cols(
+      facility_name = readr::col_character(),
+      current_count = readr::col_double(),
+      total_capacity = readr::col_double(),
+      percentage_filled = readr::col_double(),
+      timestamp = readr::col_character(),
+      day_of_week = readr::col_integer(),
+      is_raining = readr::col_logical()
+    ),
+    show_col_types = FALSE
+  )
+}
+
+
 parse_attendance_timestamps <- function(
   df,
   days_of_week = DAYS_OF_WEEK
