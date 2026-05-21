@@ -1,10 +1,6 @@
 from constants import (
-    RECOMMENDATIONS_JSON_PATH,
-    RECOMMENDATIONS_TXT_PATH,
     current_week_recommendations_save_path,
-    ensure_parent_dir,
     next_week_recommendations_save_path,
-    recommendations_week_path,
     use_hard_coded_recommendations_save_paths,
 )
 from data_preprocessing import get_current_next_week_numbers, load_data
@@ -35,26 +31,34 @@ def main():
         current_week_number,
         next_week_number,
     )
+    if current_week_recommendations is None or next_week_recommendations is None:
+        print("No recommendations found for current week or next week!")
+        return
     # Save the recommendations to CSV files
     if use_hard_coded_recommendations_save_paths:
-        current_path = current_week_recommendations_save_path
-        next_path = next_week_recommendations_save_path
+        current_week_recommendations.to_csv(
+            current_week_recommendations_save_path, index=False
+        )
+        next_week_recommendations.to_csv(
+            next_week_recommendations_save_path, index=False
+        )
     else:
-        current_path = recommendations_week_path(current_week_number)
-        next_path = recommendations_week_path(next_week_number)
-    ensure_parent_dir(current_path)
-    ensure_parent_dir(next_path)
-    current_week_recommendations.to_csv(current_path, index=False)
-    next_week_recommendations.to_csv(next_path, index=False)
+        current_week_recommendations.to_csv(
+            f"../../predictions/Week {current_week_number}/recommendations.csv",
+            index=False,
+        )
+        next_week_recommendations.to_csv(
+            f"../../predictions/Week {next_week_number}/recommendations.csv",
+            index=False,
+        )
     print(f"Recommended times saved to CSV files")
 
     recommendations_json = build_recommendations_json(
         current_week_recommendations,
         next_week_recommendations,
     )
-    ensure_parent_dir(RECOMMENDATIONS_JSON_PATH)
-    save_recommendations_json(recommendations_json, RECOMMENDATIONS_JSON_PATH)
-    print(f"Recommended times saved to {RECOMMENDATIONS_JSON_PATH}")
+    save_recommendations_json(recommendations_json, "recommendations.json")
+    print("Recommended times saved to recommendations.json")
 
     # Print the set of formatted recommendations
     formatted_recommendations_to_print = format_recommendations_to_print(
@@ -63,8 +67,7 @@ def main():
     print(formatted_recommendations_to_print)
 
     # Save the formatted recommendations to a text file
-    ensure_parent_dir(RECOMMENDATIONS_TXT_PATH)
-    with open(RECOMMENDATIONS_TXT_PATH, "w", encoding="utf-8") as f:
+    with open("recommendations.txt", "w") as f:
         f.write(formatted_recommendations_to_print)
 
 

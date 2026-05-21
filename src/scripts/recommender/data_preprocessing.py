@@ -2,11 +2,10 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from constants import (
+    anchor_monday,
     current_week_load_path,
     next_week_load_path,
-    predictions_week_path,
     use_hard_coded_load_paths,
-    week1_monday,
 )
 
 # Data preprocessing functions
@@ -16,8 +15,8 @@ from constants import (
 def get_current_next_week_numbers():
     today = datetime.now().date()
     monday = today - timedelta(days=today.weekday())
-    current_week = (monday - week1_monday).days // 7 + 1
-    return current_week, current_week + 1
+    week_no = ((monday - anchor_monday).days // 7) - 1
+    return week_no, week_no + 1
 
 
 # Split a specified column into a list of values (separated by "; ")
@@ -39,10 +38,10 @@ def load_data(current_week_number, next_week_number):
         next_week_forecast = pd.read_csv(next_week_load_path)
     else:
         current_week_forecast = pd.read_csv(
-            predictions_week_path(current_week_number, "forecast_values.csv")
+            f"../../predictions/Week {current_week_number}/forecast_values.csv"
         )
         next_week_forecast = pd.read_csv(
-            predictions_week_path(next_week_number, "forecast_values.csv")
+            f"../../predictions/Week {next_week_number}/forecast_values.csv"
         )
     # Split the exercise categories and activites into a list for the current week's forecast
     current_week_forecast = split_column_to_list(
