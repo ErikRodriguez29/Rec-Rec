@@ -1,7 +1,9 @@
 from build_recommendations import optimize_days_and_hours
 from constants import (
     current_week_save_path,
+    ensure_parent_dir,
     next_week_save_path,
+    predictions_week_path,
     use_hard_coded_save_paths,
 )
 from filtering import (
@@ -30,17 +32,19 @@ def save_data(
     current_week_forecast, next_week_forecast, current_week_number, next_week_number
 ):
     if use_hard_coded_save_paths:
-        current_week_forecast.to_csv(current_week_save_path, index=False)
-        next_week_forecast.to_csv(next_week_save_path, index=False)
+        current_path = current_week_save_path
+        next_path = next_week_save_path
     else:
-        current_week_forecast.to_csv(
-            f"../../predictions/Week {current_week_number}/forecast_values_filtered.csv",
-            index=False,
+        current_path = predictions_week_path(
+            current_week_number, "forecast_values_filtered.csv"
         )
-        next_week_forecast.to_csv(
-            f"../../predictions/Week {next_week_number}/forecast_values_filtered.csv",
-            index=False,
+        next_path = predictions_week_path(
+            next_week_number, "forecast_values_filtered.csv"
         )
+    ensure_parent_dir(current_path)
+    ensure_parent_dir(next_path)
+    current_week_forecast.to_csv(current_path, index=False)
+    next_week_forecast.to_csv(next_path, index=False)
 
 
 # Recommend times

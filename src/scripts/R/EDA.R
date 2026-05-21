@@ -23,12 +23,7 @@ for (path in c(
 week_number <- get_week_info()$current_week
 
 # Build directory path
-save_path <- file.path("../..", "EDA", paste0("Week ", week_number))
-
-# Create directory if it doesn't exist
-if (!dir.exists(save_path)) {
-  dir.create(save_path, recursive = TRUE)
-}
+save_path <- ensure_output_dir("EDA", paste0("Week ", week_number))
 
 can_save <- TRUE
 

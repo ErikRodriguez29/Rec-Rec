@@ -36,7 +36,7 @@ print(paste(
 # LOAD LATEST AVAILABLE MODEL
 # ==============================
 
-model_root <- "../../tuned_models"
+model_root <- output_path("tuned_models")
 
 model_dirs <- list.dirs(
   model_root,
@@ -53,17 +53,17 @@ week_numbers <- as.numeric(
 if (length(week_numbers) == 0 ||
   all(is.na(week_numbers))) {
   stop(
-    "No trained models found in ../../tuned_models/.
+    "No trained models found in ", model_root, ".
      Run Training.R first."
   )
 }
 
 latest_week <- max(week_numbers)
 
-model_path <- paste0(
-  "../../tuned_models/Week ",
-  latest_week,
-  "/final_attendance_workflow.rds"
+model_path <- file.path(
+  model_root,
+  paste0("Week ", latest_week),
+  "final_attendance_workflow.rds"
 )
 
 rf_final_fit_train_ts <- readRDS(model_path)
@@ -88,17 +88,10 @@ days_of_week <- c("M", "T", "W", "R", "F", "S", "U")
 # PREDICTION SAVE DIRECTORY
 # ==============================
 
-save_path <- paste0(
-  "../../predictions/Week ",
-  next_week,
-  "/"
+save_path <- file.path(
+  ensure_output_dir("predictions", paste0("Week ", next_week)),
+  ""
 )
-
-if (!dir.exists(save_path)) {
-  dir.create(save_path,
-    recursive = TRUE
-  )
-}
 
 # ------------------------------
 # Rebuild facility schedule
@@ -510,18 +503,10 @@ write_csv(
 # SAVE CURRENT WEEK CSV ONLY
 # ==============================
 
-current_save_path <- paste0(
-  "../../predictions/Week ",
-  current_week,
-  "/"
+current_save_path <- file.path(
+  ensure_output_dir("predictions", paste0("Week ", current_week)),
+  ""
 )
-
-if (!dir.exists(current_save_path)) {
-  dir.create(
-    current_save_path,
-    recursive = TRUE
-  )
-}
 
 write_csv(
   current_predictions %>%

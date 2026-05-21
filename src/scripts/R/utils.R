@@ -1,5 +1,19 @@
 # Shared helpers for Training.R, Predictions.R, and EDA.R
 
+OUTPUT_ROOT <- file.path("..", "..", "output")
+
+output_path <- function(...) {
+  file.path(OUTPUT_ROOT, ...)
+}
+
+ensure_output_dir <- function(...) {
+  path <- output_path(...)
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE)
+  }
+  path
+}
+
 DAYS_OF_WEEK <- c("M", "T", "W", "R", "F", "S", "U")
 
 POOL_HOURS_FACILITIES <- c(

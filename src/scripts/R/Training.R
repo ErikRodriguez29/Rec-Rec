@@ -26,17 +26,10 @@ current_week <- week_info$current_week
 current_monday <- week_info$current_monday
 
 # Model save path
-model_dir <- paste0(
-  "../../tuned_models/Week ",
-  current_week,
-  "/"
+model_dir <- file.path(
+  ensure_output_dir("tuned_models", paste0("Week ", current_week)),
+  ""
 )
-
-# Create directory
-if (!dir.exists(model_dir)) {
-  dir.create(model_dir, recursive = TRUE)
-}
-
 
 # Multiprocessing training with future
 library(future)

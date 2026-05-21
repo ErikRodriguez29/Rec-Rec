@@ -44,17 +44,17 @@ Rscript src/scripts/R/Predictions.R
 **Outputs:** where n is the week number since the starting week from Janurary 26, 2026 (where the first week, n=1):
 
 `EDA.R`:
-- `src/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
+- `src/output/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
 
 `Training.R`:
-- `src/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model
-- `src/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results
-- `src/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results
-- `src/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file
+- `src/output/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model
+- `src/output/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results
+- `src/output/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results
+- `src/output/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file
 
 `Predictions.R`:
-- `src/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/predictions/Week {n}/` and `src/predictions/Week {n+1}/`)
-- `src/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
+- `src/output/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`)
+- `src/output/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
 
 ### Running the recommender
 
@@ -68,10 +68,10 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 **Outputs**:
 
-- `src/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/predictions/Week {n}/` and `src/predictions/Week {n+1}/`) to be used for scoring
-- `src/predictions/Week {n}/recommendations.csv`: per-week recommendation tables
-- `src/scripts/recommender/recommendations.json`: JSON structured output for a frontend. See `src/scripts/recommender/example_recommendations.json` for an example of the JSON structure.
-- `src/scripts/recommender/recommendations.txt`: Text summary for debugging
+- `src/output/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`) to be used for scoring
+- `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables
+- `src/output/recommendations/recommendations.json`: JSON structured output for a frontend. See `src/scripts/recommender/example_recommendations.json` for an example of the JSON structure.
+- `src/output/recommendations/recommendations.txt`: Text summary for debugging
 
 ### Testing with fixed weeks
 
@@ -83,13 +83,15 @@ In `src/scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use
 frontend/              # frontend app
 src/
   data/                # facility_counts.csv and cached weather data go here
-  predictions/Week {n}/  # forecast_values.csv, recommendations.csv, ...
+  output/
+    EDA/Week {n}/      # saved weekly occupancy plots (from EDA.R)
+    tuned_models/      # saved R model workflows (from Training.R)
+    predictions/Week {n}/  # forecast_values.csv, forecast_values_filtered.csv, ...
+    recommendations/   # recommendations.json, recommendations.txt, Week {n}/recommendations.csv
   scripts/
     R/                   # EDA.R, Training.R, Predictions.R, renv
     facility-counts.py
     recommender/         # Python recommender modules + recommend-times.py
-  tuned_models/          # saved R model workflows (from Training.R)
-  EDA/Week {n}/          # saved weekly occupancy plots go here
 ```
 
 For more details on the scripts, see: [`src/scripts/README.md`](src/scripts/README.md).

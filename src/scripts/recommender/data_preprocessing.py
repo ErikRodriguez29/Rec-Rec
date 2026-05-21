@@ -5,6 +5,7 @@ from constants import (
     anchor_monday,
     current_week_load_path,
     next_week_load_path,
+    predictions_week_path,
     use_hard_coded_load_paths,
 )
 
@@ -38,10 +39,10 @@ def load_data(current_week_number, next_week_number):
         next_week_forecast = pd.read_csv(next_week_load_path)
     else:
         current_week_forecast = pd.read_csv(
-            f"../../predictions/Week {current_week_number}/forecast_values.csv"
+            predictions_week_path(current_week_number, "forecast_values.csv")
         )
         next_week_forecast = pd.read_csv(
-            f"../../predictions/Week {next_week_number}/forecast_values.csv"
+            predictions_week_path(next_week_number, "forecast_values.csv")
         )
     # Split the exercise categories and activites into a list for the current week's forecast
     current_week_forecast = split_column_to_list(

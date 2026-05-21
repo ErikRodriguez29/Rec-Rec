@@ -1,17 +1,37 @@
 from datetime import date, timedelta
+from pathlib import Path
+
+OUTPUT_ROOT = "../../output"
+PREDICTIONS_ROOT = f"{OUTPUT_ROOT}/predictions"
+RECOMMENDATIONS_ROOT = f"{OUTPUT_ROOT}/recommendations"
+RECOMMENDATIONS_JSON_PATH = f"{RECOMMENDATIONS_ROOT}/recommendations.json"
+RECOMMENDATIONS_TXT_PATH = f"{RECOMMENDATIONS_ROOT}/recommendations.txt"
+
+
+def predictions_week_path(week_number: int, filename: str) -> str:
+    return f"{PREDICTIONS_ROOT}/Week {week_number}/{filename}"
+
+
+def recommendations_week_path(week_number: int) -> str:
+    return f"{RECOMMENDATIONS_ROOT}/Week {week_number}/recommendations.csv"
+
+
+def ensure_parent_dir(path: str) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
 
 # Whether to use hard coded load paths for the current and next week numbers
 use_hard_coded_load_paths = False
-current_week_load_path = "../../predictions/Week 16/forecast_values.csv"
-next_week_load_path = "../../predictions/Week 17/forecast_values.csv"
+current_week_load_path = predictions_week_path(16, "forecast_values.csv")
+next_week_load_path = predictions_week_path(17, "forecast_values.csv")
 # Whether to use hard coded save paths for the current and next week numbers
 use_hard_coded_save_paths = False
-current_week_save_path = "../../predictions/Week 16/forecast_values_filtered.csv"
-next_week_save_path = "../../predictions/Week 17/forecast_values_filtered.csv"
+current_week_save_path = predictions_week_path(16, "forecast_values_filtered.csv")
+next_week_save_path = predictions_week_path(17, "forecast_values_filtered.csv")
 # Whether to use hard coded save paths for recommendation CSV output
 use_hard_coded_recommendations_save_paths = False
-current_week_recommendations_save_path = "../../predictions/Week 16/recommendations.csv"
-next_week_recommendations_save_path = "../../predictions/Week 17/recommendations.csv"
+current_week_recommendations_save_path = recommendations_week_path(16)
+next_week_recommendations_save_path = recommendations_week_path(17)
 
 # Weights to use for the optimization function
 percentage_filled_weight_constant = 0.33  # Weight for percentage filled
