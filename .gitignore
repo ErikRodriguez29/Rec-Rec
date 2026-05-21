@@ -19,4 +19,4 @@ __pycache__/
 src/scripts/raw.json
 src/scripts/recommender/recommendations.json
 src/scripts/recommender/recommendations.txt
-scripts
+/scripts/
