@@ -4,71 +4,73 @@ The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation C
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
 2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R` → `Training.R` → `Predictions.R`).
-3. Recommends personalized weekly times to go to the gym that minimizes attendance while respecting user preferences, maximizing the chances of the user finding their preferred machines for their workout routines (`scripts/recommender/recommend-times.py`).
+3. Recommends personalized weekly times to go to the gym that minimizes attendance while respecting user preferences, maximizing the chances of the user finding their preferred machines for their workout routines (`recommend-times.py`).
 4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (in progress).
 
 ## Instructions for Setup
 
 ### Data
 
-Place your dataset on `facility_counts.csv` in the `data/` folder. A dataset can be retrieved using the python script:
+Place your dataset on `facility_counts.csv` in the `src/data/` folder. A dataset can be retrieved using the python script:
 
 ```bash
-python scripts/facility-counts.py
+python src/scripts/facility-counts.py
 ```
 ### Forecast data generation
 
-From the `scripts/` directory, install the required packages with `renv::restore()`, then run the following scripts in order: `EDA.R` → `Training.R` → `Predictions.R`
+From the `src/scripts/` directory, install the required packages with `renv::restore()`, then run the following scripts in order: `EDA.R` → `Training.R` → `Predictions.R`
 
 **Outputs:** where n is the week number since the starting week from Janurary 26, 2026:
 
 `EDA.R`:
-- `EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
+- `src/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
 
 `Training.R`:
-- `tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model
-- `tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results
-- `tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results
-- `tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file
+- `src/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model
+- `src/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results
+- `src/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results
+- `src/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file
 
 `Predictions.R`:
-- `predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `predictions/Week {n}/` and `predictions/Week {n+1}/`)
-- `predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
+- `src/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/predictions/Week {n}/` and `src/predictions/Week {n+1}/`)
+- `src/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
 
 ### Running the recommender
 
-To run the recommender help menu, run the following commands from the `scripts/recommender` directory:
+To run the recommender help menu, run the following commands from the `src/scripts/recommender` directory:
 ```bash
 pip install -r requirements.txt
 python recommend-times.py -h
 ```
 
-Example commands can be found at [`scripts/recommender/example_commands.md`](scripts/recommender/example_commands.md).
+Example commands can be found at [`src/scripts/recommender/example_commands.md`](src/scripts/recommender/example_commands.md).
 
 **Outputs**:
 
-- `predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `predictions/Week {n}/` and `predictions/Week {n+1}/`) to be used for scoring
-- `predictions/Week {n}/recommendations.csv`: per-week recommendation tables
-- `scripts/recommender/recommendations.json`: JSON structured output for a frontend. See `scripts/recommender/example_recommendations.json` for an example of the JSON structure.
-- `scripts/recommender/recommendations.txt`: Text summary for debugging
+- `src/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/predictions/Week {n}/` and `src/predictions/Week {n+1}/`) to be used for scoring
+- `src/predictions/Week {n}/recommendations.csv`: per-week recommendation tables
+- `src/scripts/recommender/recommendations.json`: JSON structured output for a frontend. See `src/scripts/recommender/example_recommendations.json` for an example of the JSON structure.
+- `src/scripts/recommender/recommendations.txt`: Text summary for debugging
 
 ### Testing with fixed weeks
 
-In `scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use_hard_coded_save_paths`, and/or `use_hard_coded_recommendations_save_paths` to `True` to pin inputs/outputs to specific paths paths instead of the calendar-derived current/next week.
+In `src/scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use_hard_coded_save_paths`, and/or `use_hard_coded_recommendations_save_paths` to `True` to pin inputs/outputs to specific paths paths instead of the calendar-derived current/next week.
 
 ## Project layout
 
 ```
-data/                  # facility_counts.csv and cached weather data (weather_cache) go here
-predictions/Week {n}/  # forecast_values.csv, recommendations.csv, ...
-scripts/
-  EDA.R
-  Training.R
-  Predictions.R
-  facility-counts.py
-  recommender/         # Python recommender modules + recommend-times.py
-tuned_models/          # saved R model workflows (from Training.R)
-EDA/Week {n}/          # saved weekly occupancy plots go here
+frontend/              # frontend app
+src/
+  data/                # facility_counts.csv and cached weather data go here
+  predictions/Week {n}/  # forecast_values.csv, recommendations.csv, ...
+  scripts/
+    EDA.R
+    Training.R
+    Predictions.R
+    facility-counts.py
+    recommender/       # Python recommender modules + recommend-times.py
+  tuned_models/        # saved R model workflows (from Training.R)
+  EDA/Week {n}/        # saved weekly occupancy plots go here
 ```
 
-For more details on the scripts, see: [`scripts/README.md`](scripts/README.md).
+For more details on the scripts, see: [`src/scripts/README.md`](src/scripts/README.md).

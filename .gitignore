@@ -4,10 +4,10 @@
 *.RData
 *.Ruserdata
 Rplots.pdf
-EDA/
-predictions/
-tuned_models/
-data/
+src/EDA/
+src/predictions/
+src/tuned_models/
+src/data/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,6 +16,7 @@ __pycache__/
 .env
 .env.*
 *.bak
-scripts/raw.json
-scripts/recommender/recommendations.json
-scripts/recommender/recommendations.txt
+src/scripts/raw.json
+src/scripts/recommender/recommendations.json
+src/scripts/recommender/recommendations.txt
+scripts
