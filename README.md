@@ -3,7 +3,7 @@
 The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation Center facility occupancy and recommends gym times based on user preferred activities, exercise categories, schedule, and facilities. The recommender system does the following:
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
-2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R` → `Training.R` → `Predictions.R`).
+2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R`, `Training.R`, `Predictions.R`).
 3. Recommends personalized weekly times to go to the gym that minimizes attendance while respecting user preferences, maximizing the chances of the user finding their preferred machines for their workout routines (`recommend-times.py`).
 4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (in progress).
 
@@ -11,16 +11,36 @@ The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation C
 
 ### Data
 
-Place your dataset on `facility_counts.csv` in the `src/data/` folder. A dataset can be retrieved using the python script:
+Place your dataset on `facility_counts.csv` in `src/data/`. A dataset can be retrieved using the python script:
 
 ```bash
 python src/scripts/facility-counts.py
 ```
 ### Forecast data generation
 
-From the `src/scripts/` directory, install the required packages with `renv::restore()`, then run the following scripts in order: `EDA.R` → `Training.R` → `Predictions.R`
+From `src/scripts/`, install the required packages with `renv::restore()`, then run the following scripts in order: `EDA.R`, `Training.R`, `Predictions.R`
 
-**Outputs:** where n is the week number since the starting week from Janurary 26, 2026:
+Install the required packages:
+```bash
+renv::restore()
+```
+
+Generate the EDA plots:
+```bash
+Rscript src/scripts/EDA.R
+```
+
+Train a model:
+```bash
+Rscript src/scripts/Training.R
+```
+
+Generate predictions:
+```bash
+Rscript src/scripts/Predictions.R
+```
+
+**Outputs:** where n is the week number since the starting week from Janurary 26, 2026 (where the first week, n=1):
 
 `EDA.R`:
 - `src/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
@@ -37,13 +57,13 @@ From the `src/scripts/` directory, install the required packages with `renv::res
 
 ### Running the recommender
 
-To run the recommender help menu, run the following commands from the `src/scripts/recommender` directory:
+To run the recommender help menu, run the following from `src/scripts/recommender`:
 ```bash
 pip install -r requirements.txt
 python recommend-times.py -h
 ```
 
-Example commands can be found at [`src/scripts/recommender/example_commands.md`](src/scripts/recommender/example_commands.md).
+Example commands can be found in [`src/scripts/recommender/example_commands.md`](src/scripts/recommender/example_commands.md).
 
 **Outputs**:
 
