@@ -33,6 +33,7 @@ From the `scripts/` directory, install the required packages with `renv::restore
 
 `Predictions.R`:
 - `predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `predictions/Week {n}/` and `predictions/Week {n+1}/`)
+- `predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
 
 ### Running the recommender
 
