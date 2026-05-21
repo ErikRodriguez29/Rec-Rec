@@ -49,7 +49,6 @@ attendance <- attendance_raw %>%
   mutate(is_raining = factor(is_raining))
 
 
-
 # Pre processing
 facility_capacities <- attendance_raw %>%
   distinct(facility_name, total_capacity)
@@ -71,7 +70,7 @@ combination_schedule <- all_combinations %>%
   filter_to_open_hours() %>%
   left_join(facility_capacities, by = "facility_name")
 
-#3. Join the combination schedule to the attendance dataset
+# 3. Join the combination schedule to the attendance dataset
 attendance <- combination_schedule %>%
   left_join(
     # Removing percentage_filled so we can recalculate it later, total capacity to avoid conflicts
@@ -136,20 +135,20 @@ attendance_split_ts <- attendance %>%
   arrange(timestamp) %>%
   time_series_split(
     date_var   = timestamp,
-    assess     = "1 week",   # hold out the last 1 week as test set
-    cumulative = TRUE        # use all prior data for training
+    assess     = "1 week", # hold out the last 1 week as test set
+    cumulative = TRUE # use all prior data for training
   )
 
 train_data_ts <- training(attendance_split_ts)
-test_data_ts  <- testing(attendance_split_ts)
+test_data_ts <- testing(attendance_split_ts)
 
 ts_folds <- time_series_cv(
-  data       = train_data_ts,
-  date_var   = timestamp,
-  assess     = "1 week",   # each fold's assessment window
-  initial    = "21 days",  # minimum training window per fold
-  skip       = "1 week",
-  slice_limit = 8,         # number of folds
+  data = train_data_ts,
+  date_var = timestamp,
+  assess = "1 week", # each fold's assessment window
+  initial = "21 days", # minimum training window per fold
+  skip = "1 week",
+  slice_limit = 8, # number of folds
   cumulative = TRUE
 )
 
@@ -165,14 +164,15 @@ attendance_recipe_ts <- recipe(
   step_normalize(all_numeric_predictors(), -lag_1w, -roll_4w)
 
 
-
 # Model setup
 
 # Tuning trees, learn_rate (the learning rate), and min_n
 library(bonsai)
-boosted_model <- boost_tree(trees = tune(),
-                            learn_rate = tune(),
-                            min_n = tune()) %>%
+boosted_model <- boost_tree(
+  trees = tune(),
+  learn_rate = tune(),
+  min_n = tune()
+) %>%
   set_engine("xgboost") %>%
   set_mode("regression")
 
@@ -191,8 +191,8 @@ race_ctrl <- control_race(
   save_pred = FALSE,
   parallel_over = "everything",
   save_workflow = TRUE,
-  verbose = TRUE,       # Show general progress
-  verbose_elim = TRUE   # Show which models are discarded during racing
+  verbose = TRUE, # Show general progress
+  verbose_elim = TRUE # Show which models are discarded during racing
 )
 
 # Run the racing search across all models in the set
@@ -212,19 +212,14 @@ ggsave(
   plot = autoplot(race_results),
   path = model_dir
 )
-best_results <- race_results %>% 
-  extract_workflow_set_result("base_rec_boosted") %>% 
+best_results <- race_results %>%
+  extract_workflow_set_result("base_rec_boosted") %>%
   select_best(metric = "rmse")
-
-
-
-
-
 
 
 # 1. Rank models by RMSE and pull the ID of the #1 winner
 model_rankings <- rank_results(race_results, rank_metric = "rmse", select_best = TRUE)
-best_model_id  <- model_rankings$wflow_id[1]
+best_model_id <- model_rankings$wflow_id[1]
 best_model_type <- model_rankings$model[1]
 
 # 2. Extract the best parameters for the best model (hyperparameters only)
@@ -243,8 +238,8 @@ print(best_params)
 cat("CV RMSE of best model:", best_model_rmse, "\n")
 
 # 3. Finalize, Fit, and Save
-final_wf_winner <- race_results %>% 
-  extract_workflow(best_model_id) %>% 
+final_wf_winner <- race_results %>%
+  extract_workflow(best_model_id) %>%
   finalize_workflow(best_params)
 
 # This is the final model ready for production

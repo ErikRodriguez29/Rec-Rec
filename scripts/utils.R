@@ -34,8 +34,8 @@ FACILITY_TYPE_LEVELS <- c(
 
 
 get_week_info <- function(
-    week1_start = as.Date("2026-01-26"),
-    today_date = Sys.Date()
+  week1_start = as.Date("2026-01-26"),
+  today_date = Sys.Date()
 ) {
   current_monday <- today_date -
     lubridate::wday(today_date, week_start = 1) + 1
@@ -58,8 +58,8 @@ get_week_info <- function(
 
 
 parse_attendance_timestamps <- function(
-    df,
-    days_of_week = DAYS_OF_WEEK
+  df,
+  days_of_week = DAYS_OF_WEEK
 ) {
   df %>%
     dplyr::mutate(
@@ -89,7 +89,7 @@ filter_to_open_hours <- function(df) {
             (day_of_week %in% c("F", "S", "U") & hour %in% CLIMB_HOURS_F_U)
         )) |
         (!(facility_name %in% POOL_HOURS_FACILITIES |
-             facility_name %in% CLIMB_CENTER_FACILITY) & (
+          facility_name %in% CLIMB_CENTER_FACILITY) & (
           (day_of_week %in% c("M", "T", "W", "R") & hour %in% STANDARD_HOURS_M_R) |
             (day_of_week == "F" & hour %in% STANDARD_HOURS_F) |
             (day_of_week == "S" & hour %in% STANDARD_HOURS_S) |
@@ -153,8 +153,8 @@ add_panel_lag_features <- function(df) {
 
 
 build_attendance_history <- function(
-    attendance_raw,
-    days_of_week = DAYS_OF_WEEK
+  attendance_raw,
+  days_of_week = DAYS_OF_WEEK
 ) {
   attendance_raw %>%
     parse_attendance_timestamps(days_of_week = days_of_week) %>%
@@ -215,10 +215,10 @@ lag_lookup_for_week <- function(history, ref_week) {
 
 
 join_slot_lags <- function(
-    pred_data,
-    history,
-    slot_lag_medians,
-    days_of_week = DAYS_OF_WEEK
+  pred_data,
+  history,
+  slot_lag_medians,
+  days_of_week = DAYS_OF_WEEK
 ) {
   pred_data %>%
     dplyr::mutate(
