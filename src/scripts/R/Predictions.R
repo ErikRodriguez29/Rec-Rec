@@ -2,7 +2,12 @@ library(tidyverse)
 library(tidymodels)
 library(lubridate)
 
-for (path in c("utils.R", file.path("scripts", "utils.R"))) {
+for (path in c(
+  "utils.R",
+  file.path("R", "utils.R"),
+  file.path("scripts", "R", "utils.R"),
+  file.path("src", "scripts", "R", "utils.R")
+)) {
   if (file.exists(path)) {
     source(path)
     break
@@ -31,7 +36,7 @@ print(paste(
 # LOAD LATEST AVAILABLE MODEL
 # ==============================
 
-model_root <- "../tuned_models"
+model_root <- output_path("tuned_models")
 
 model_dirs <- list.dirs(
   model_root,
@@ -48,17 +53,17 @@ week_numbers <- as.numeric(
 if (length(week_numbers) == 0 ||
   all(is.na(week_numbers))) {
   stop(
-    "No trained models found in ../tuned_models/.
+    "No trained models found in ", model_root, ".
      Run Training.R first."
   )
 }
 
 latest_week <- max(week_numbers)
 
-model_path <- paste0(
-  "../tuned_models/Week ",
-  latest_week,
-  "/final_attendance_workflow.rds"
+model_path <- file.path(
+  model_root,
+  paste0("Week ", latest_week),
+  "final_attendance_workflow.rds"
 )
 
 rf_final_fit_train_ts <- readRDS(model_path)
@@ -74,9 +79,7 @@ print(paste(
 # (needed to rebuild schedule)
 # ==============================
 
-attendance_raw <- read_csv(
-  "../data/facility_counts.csv"
-)
+attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
 
 days_of_week <- c("M", "T", "W", "R", "F", "S", "U")
 
@@ -85,17 +88,10 @@ days_of_week <- c("M", "T", "W", "R", "F", "S", "U")
 # PREDICTION SAVE DIRECTORY
 # ==============================
 
-save_path <- paste0(
-  "../predictions/Week ",
-  next_week,
-  "/"
+save_path <- file.path(
+  ensure_output_dir("predictions", paste0("Week ", next_week)),
+  ""
 )
-
-if (!dir.exists(save_path)) {
-  dir.create(save_path,
-    recursive = TRUE
-  )
-}
 
 # ------------------------------
 # Rebuild facility schedule
@@ -174,7 +170,7 @@ current_forecast_start <- as.Date(current_monday)
 current_forecast_end <- current_forecast_start + days(6)
 
 current_cache_file <- paste0(
-  "../data/weather_data/cached_weather_week_",
+  "../../data/weather_data/cached_weather_week_",
   current_week,
   ".rds"
 )
@@ -244,13 +240,13 @@ forecast_end <- forecast_start + days(6)
 
 # Save the weather into a cache file so that we don't have to make API calls
 # for an already existing week
-weather_dir <- "../data/weather_data"
+weather_dir <- "../../data/weather_data"
 
 if (!dir.exists(weather_dir)) {
   dir.create(weather_dir, recursive = TRUE)
 }
 
-cache_file <- paste0("../data/weather_data/cached_weather_week_", next_week, ".rds")
+cache_file <- paste0("../../data/weather_data/cached_weather_week_", next_week, ".rds")
 
 if (file_exists(cache_file)) {
   # Load existing data if it exists
@@ -507,18 +503,10 @@ write_csv(
 # SAVE CURRENT WEEK CSV ONLY
 # ==============================
 
-current_save_path <- paste0(
-  "../predictions/Week ",
-  current_week,
-  "/"
+current_save_path <- file.path(
+  ensure_output_dir("predictions", paste0("Week ", current_week)),
+  ""
 )
-
-if (!dir.exists(current_save_path)) {
-  dir.create(
-    current_save_path,
-    recursive = TRUE
-  )
-}
 
 write_csv(
   current_predictions %>%
@@ -613,7 +601,7 @@ ggsave(
 
 pool_plot <-
   forecast_predictions %>%
-  filter(facility_name %in% pool_hours_facilities) %>%
+  filter(facility_name %in% POOL_HOURS_FACILITIES) %>%
   group_by(facility_name, day_of_week, hour) %>%
   summarize(
     avg_pct = mean(percentage_filled),

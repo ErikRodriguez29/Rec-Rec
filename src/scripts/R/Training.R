@@ -3,12 +3,19 @@ library(tidyverse)
 library(tidymodels)
 library(timetk)
 
-for (path in c("utils.R", file.path("scripts", "utils.R"))) {
+for (path in c(
+  "utils.R",
+  file.path("R", "utils.R"),
+  file.path("scripts", "R", "utils.R"),
+  file.path("src", "scripts", "R", "utils.R")
+)) {
   if (file.exists(path)) {
     source(path)
     break
   }
 }
+
+set.seed(123)
 
 # ==============================
 # WEEK DIRECTORY HANDLING
@@ -19,28 +26,24 @@ current_week <- week_info$current_week
 current_monday <- week_info$current_monday
 
 # Model save path
-model_dir <- paste0(
-  "../tuned_models/Week ",
-  current_week,
-  "/"
+model_dir <- file.path(
+  ensure_output_dir("tuned_models", paste0("Week ", current_week)),
+  ""
 )
-
-# Create directory
-if (!dir.exists(model_dir)) {
-  dir.create(model_dir, recursive = TRUE)
-}
-
 
 # Multiprocessing training with future
 library(future)
 library(doFuture)
-plan(multisession, workers = parallel::detectCores(logical = FALSE))
+n_workers <- min(4L, max(1L, parallel::detectCores(logical = FALSE) - 1L))
+plan(multisession, workers = n_workers)
+options(future.globals.maxSize = 3 * 1024^3)
 registerDoFuture()
+on.exit(plan(sequential), add = TRUE)
 
 
 # Loading
 
-attendance_raw <- read_csv("../data/facility_counts.csv")
+attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
 
 days_of_week <- DAYS_OF_WEEK
 
@@ -114,11 +117,14 @@ anchor_date <- attendance %>%
   summarize(min(floor_date(timestamp, "week", week_start = 1))) %>%
   pull()
 
-# Fill NA timestamps with synthetic values built from anchor date + day + hour
+# Fill NA timestamps with synthetic values built from anchor date + day + hour, with offset seconds per facility to prevent duplicate timestamps
 attendance <- attendance %>%
   mutate(timestamp = if_else(
     is.na(timestamp),
-    anchor_date + days(match(day_of_week, days_of_week) - 1) + hours(hour),
+    anchor_date +
+      days(match(day_of_week, days_of_week) - 1) +
+      hours(hour) +
+      seconds(as.integer(facility_name) - 1L),
     timestamp
   ))
 
@@ -129,14 +135,19 @@ attendance <- attendance %>%
 attendance <- add_panel_lag_features(attendance)
 attendance <- assign_facility_type(attendance)
 
+# Due to duplicate timestamps from many facilities being recorded at the same time,
+# we need to account for this by adding extra seconds per facility.
+attendance <- attendance %>%
+  mutate(cv_time = timestamp + seconds(as.integer(facility_name) - 1L))
+
 # Training/testing split/folds
 
 attendance_split_ts <- attendance %>%
-  arrange(timestamp) %>%
+  arrange(cv_time) %>%
   time_series_split(
-    date_var   = timestamp,
-    assess     = "1 week", # hold out the last 1 week as test set
-    cumulative = TRUE # use all prior data for training
+    date_var = cv_time,
+    assess = "1 week",
+    cumulative = TRUE
   )
 
 train_data_ts <- training(attendance_split_ts)
@@ -144,7 +155,7 @@ test_data_ts <- testing(attendance_split_ts)
 
 ts_folds <- time_series_cv(
   data = train_data_ts,
-  date_var = timestamp,
+  date_var = cv_time,
   assess = "1 week", # each fold's assessment window
   initial = "21 days", # minimum training window per fold
   skip = "1 week",
@@ -189,8 +200,8 @@ model_set <-
 # Define a racing control object (this drops poor hyperparameter combos early)
 race_ctrl <- control_race(
   save_pred = FALSE,
-  parallel_over = "everything",
-  save_workflow = TRUE,
+  parallel_over = "resamples",
+  save_workflow = FALSE,
   verbose = TRUE, # Show general progress
   verbose_elim = TRUE # Show which models are discarded during racing
 )
@@ -201,7 +212,7 @@ race_results <- model_set %>%
   workflow_map(
     "tune_race_anova",
     resamples = ts_folds,
-    grid = 10, # Number of candidate models to try per type
+    grid = 8, # Number of candidate models to try per type
     control = race_ctrl,
     metrics = metric_set(rmse, rsq)
   )

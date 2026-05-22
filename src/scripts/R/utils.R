@@ -1,5 +1,19 @@
 # Shared helpers for Training.R, Predictions.R, and EDA.R
 
+OUTPUT_ROOT <- file.path("..", "..", "output")
+
+output_path <- function(...) {
+  file.path(OUTPUT_ROOT, ...)
+}
+
+ensure_output_dir <- function(...) {
+  path <- output_path(...)
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE)
+  }
+  path
+}
+
 DAYS_OF_WEEK <- c("M", "T", "W", "R", "F", "S", "U")
 
 POOL_HOURS_FACILITIES <- c(
@@ -53,6 +67,24 @@ get_week_info <- function(
     current_week = current_week,
     next_week = current_week + 1L,
     next_monday = current_monday + lubridate::weeks(1)
+  )
+}
+
+
+read_facility_counts <- function(path) {
+  readr::read_csv(
+    path,
+    na = c("N/A", ""),
+    col_types = readr::cols(
+      facility_name = readr::col_character(),
+      current_count = readr::col_double(),
+      total_capacity = readr::col_double(),
+      percentage_filled = readr::col_double(),
+      timestamp = readr::col_character(),
+      day_of_week = readr::col_integer(),
+      is_raining = readr::col_logical()
+    ),
+    show_col_types = FALSE
   )
 }
 
