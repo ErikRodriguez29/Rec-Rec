@@ -70,7 +70,7 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 - `src/output/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`) to be used for scoring
 - `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables
-- `src/output/recommendations/recommendations.json`: JSON structured output for a frontend. See `src/output/recommendations/example_recommendations.json` for an example of the JSON structure.
+- `src/output/recommendations/recommendations.json`: JSON structured output for the frontend. See `src/output/recommendations/example_recommendations.json` for an example of the JSON structure.
 - `src/output/recommendations/recommendations.txt`: Text summary for debugging
 
 ### Testing with fixed weeks
