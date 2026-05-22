@@ -85,7 +85,8 @@ def format_overall_recommendations(df):
 
 
 # Build the json format for the current and next week recommendations
-# See example of the outputted format at example_recommendations.json (produced using example command #3 in example_commands.md)
+# See example of the outputted format at ../../output/recommendations/example_recommendations.json
+# (produced using example command #3 in example_commands.md)
 # Runtime output is written to ../../output/recommendations/recommendations.json
 def build_week_recommendations_json(df):
     by_category = []
