@@ -3,7 +3,7 @@ from constants import (
     current_week_save_path,
     ensure_parent_dir,
     next_week_save_path,
-    predictions_week_path,
+    recommendations_week_path,
     use_hard_coded_save_paths,
 )
 from filtering import (
@@ -35,10 +35,10 @@ def save_data(
         current_path = current_week_save_path
         next_path = next_week_save_path
     else:
-        current_path = predictions_week_path(
+        current_path = recommendations_week_path(
             current_week_number, "forecast_values_filtered.csv"
         )
-        next_path = predictions_week_path(
+        next_path = recommendations_week_path(
             next_week_number, "forecast_values_filtered.csv"
         )
     ensure_parent_dir(current_path)

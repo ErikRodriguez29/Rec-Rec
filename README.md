@@ -21,7 +21,7 @@ python src/scripts/facility-counts.py
 From `src/scripts/`, install the required packages with `renv::restore()`, then run the following scripts in 
 order: `EDA.R`, `Training.R`, `Predictions.R`
 
-Install the required R packages:
+Install the required packages:
 ```bash
 renv::restore()
 ```
@@ -44,17 +44,17 @@ Rscript src/scripts/R/Predictions.R
 **Outputs:** where n is the week number since the starting week from Janurary 26, 2026 (where the first week, n=1):
 
 `EDA.R`:
-- `src/output/EDA/Week {n}/*.png`: Heatmaps showing historical average occupancy patterns across the Recreation Center overall and by individual facility.
+- `src/output/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
 
 `Training.R`:
-- `src/output/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model.
-- `src/output/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results.
-- `src/output/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results.
-- `src/output/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file.
+- `src/output/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model
+- `src/output/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results
+- `src/output/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results
+- `src/output/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file
 
 `Predictions.R`:
-- `src/output/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`).
-- `src/output/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories.
+- `src/output/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`)
+- `src/output/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
 
 ### Running the recommender
 
@@ -68,10 +68,10 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 **Outputs**:
 
-- `src/output/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`) to be used for scoring.
-- `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables after filtering, scoring, and limiting have been applied, for debugging purposes.
-- `src/output/recommendations/recommendations.json`: JSON structured output for the frontend. See `src/output/recommendations/example_recommendations.json` for an example of the JSON structure.
-- `src/output/recommendations/recommendations.txt`: An alternative text summary of the recommendations, for debugging purposes.
+- `src/output/recommendations/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/recommendations/Week {n}/` and `src/output/recommendations/Week {n+1}/`) to be used for scoring
+- `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables
+- `src/output/recommendations/recommendations.json`: JSON structured output for a frontend. See `src/output/recommendations/example_recommendations.json` for an example of the JSON structure.
+- `src/output/recommendations/recommendations.txt`: Text summary for debugging
 
 ### Testing with fixed weeks
 
@@ -86,8 +86,8 @@ src/
   output/
     EDA/Week {n}/      # saved weekly occupancy plots (from EDA.R)
     tuned_models/      # saved R model workflows (from Training.R)
-    predictions/Week {n}/  # forecast_values.csv, forecast_values_filtered.csv, ...
-    recommendations/   # recommendations.json, recommendations.txt, example_recommendations.json, Week {n}/recommendations.csv
+    predictions/Week {n}/  # forecast_values.csv, prediction heatmaps
+    recommendations/   # recommendations.json, recommendations.txt, example_recommendations.json, Week {n}/forecast_values_filtered.csv, recommendations.csv
   scripts/
     R/                   # EDA.R, Training.R, Predictions.R, renv
     facility-counts.py

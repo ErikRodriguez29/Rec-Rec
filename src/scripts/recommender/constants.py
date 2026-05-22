@@ -12,8 +12,8 @@ def predictions_week_path(week_number: int, filename: str) -> str:
     return f"{PREDICTIONS_ROOT}/Week {week_number}/{filename}"
 
 
-def recommendations_week_path(week_number: int) -> str:
-    return f"{RECOMMENDATIONS_ROOT}/Week {week_number}/recommendations.csv"
+def recommendations_week_path(week_number: int, filename: str = "recommendations.csv") -> str:
+    return f"{RECOMMENDATIONS_ROOT}/Week {week_number}/{filename}"
 
 
 def ensure_parent_dir(path: str) -> None:
@@ -26,8 +26,8 @@ current_week_load_path = predictions_week_path(16, "forecast_values.csv")
 next_week_load_path = predictions_week_path(17, "forecast_values.csv")
 # Whether to use hard coded save paths for the current and next week numbers
 use_hard_coded_save_paths = False
-current_week_save_path = predictions_week_path(16, "forecast_values_filtered.csv")
-next_week_save_path = predictions_week_path(17, "forecast_values_filtered.csv")
+current_week_save_path = recommendations_week_path(16, "forecast_values_filtered.csv")
+next_week_save_path = recommendations_week_path(17, "forecast_values_filtered.csv")
 # Whether to use hard coded save paths for recommendation CSV output
 use_hard_coded_recommendations_save_paths = False
 current_week_recommendations_save_path = recommendations_week_path(16)
