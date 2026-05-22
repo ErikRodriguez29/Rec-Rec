@@ -1,6 +1,6 @@
 # UCSB Recreation Center Recommender
 
-The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation Center facility occupancy and recommends gym times based on user preferred activities, exercise categories, schedule, and facilities. The recommender system does the following:
+The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation Center facility occupancy and builds personalized recommended weekly schedules to go to the gym based on user preferred activities, exercise categories, schedule, and facilities. The pipeline does the following:
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
 2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R`,`Training.R`, `Predictions.R`).
@@ -21,7 +21,7 @@ python src/scripts/facility-counts.py
 From `src/scripts/`, install the required packages with `renv::restore()`, then run the following scripts in 
 order: `EDA.R`, `Training.R`, `Predictions.R`
 
-Install the required packages:
+Install the required R packages:
 ```bash
 renv::restore()
 ```
@@ -44,17 +44,17 @@ Rscript src/scripts/R/Predictions.R
 **Outputs:** where n is the week number since the starting week from Janurary 26, 2026 (where the first week, n=1):
 
 `EDA.R`:
-- `src/output/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
+- `src/output/EDA/Week {n}/*.png`: Heatmaps showing historical average occupancy patterns across the Recreation Center overall and by individual facility.
 
 `Training.R`:
-- `src/output/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model
-- `src/output/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results
-- `src/output/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results
-- `src/output/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file
+- `src/output/tuned_models/Week {n}/final_attendance_workflow.rds`: the trained model.
+- `src/output/tuned_models/Week {n}/race_results_autoplot.png`: a plot of the model tuning results.
+- `src/output/tuned_models/Week {n}/race_results.csv`: a CSV of the model tuning results.
+- `src/output/tuned_models/Week {n}/race_results.txt`: a text version of the race_results.csv file.
 
 `Predictions.R`:
-- `src/output/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`)
-- `src/output/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories
+- `src/output/predictions/Week {n}/forecast_values.csv`: raw forecasted attendance for both the current and next week (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`).
+- `src/output/predictions/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen from the created facility categories.
 
 ### Running the recommender
 
@@ -68,10 +68,10 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 **Outputs**:
 
-- `src/output/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`) to be used for scoring
-- `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables after filtering, scoring, and limiting have been applied, for debugging purposes
+- `src/output/predictions/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/predictions/Week {n}/` and `src/output/predictions/Week {n+1}/`) to be used for scoring.
+- `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables after filtering, scoring, and limiting have been applied, for debugging purposes.
 - `src/output/recommendations/recommendations.json`: JSON structured output for the frontend. See `src/output/recommendations/example_recommendations.json` for an example of the JSON structure.
-- `src/output/recommendations/recommendations.txt`: Text summary for debugging purposes
+- `src/output/recommendations/recommendations.txt`: An alternative text summary of the recommendations, for debugging purposes.
 
 ### Testing with fixed weeks
 
