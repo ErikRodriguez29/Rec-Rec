@@ -37,7 +37,8 @@ attendance <- attendance_cleaned %>%
     day_of_week = factor(day_of_week, levels = 0:6, labels = DAYS_OF_WEEK),
     facility_name = factor(facility_name)
   ) %>%
-  arrange(facility_name, timestamp)
+  arrange(facility_name, timestamp) %>%
+  filter_to_open_hours()
 skim(attendance)
 
 # 1 Average fullness of all Facilities
