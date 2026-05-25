@@ -188,7 +188,7 @@ build_attendance_history <- function(
   attendance_raw,
   days_of_week = DAYS_OF_WEEK
 ) {
-  attendance_raw %>%
+  observed <- attendance_raw %>%
     parse_attendance_timestamps(days_of_week = days_of_week) %>%
     filter_to_open_hours() %>%
     dplyr::mutate(
@@ -202,7 +202,44 @@ build_attendance_history <- function(
     dplyr::summarize(
       current_count = median(current_count, na.rm = TRUE),
       .groups = "drop"
+    )
+
+  slots <- expand.grid(
+    facility_name = unique(attendance_raw$facility_name),
+    day_of_week = factor(days_of_week),
+    hour = 0:23
+  ) %>%
+    filter_to_open_hours()
+
+  week_range <- seq(
+    min(observed$week_start),
+    max(observed$week_start),
+    by = "1 week"
+  )
+
+  tidyr::crossing(slots, week_start = week_range) %>%
+    dplyr::left_join(
+      observed,
+      by = c("facility_name", "day_of_week", "hour", "week_start")
     ) %>%
+    dplyr::group_by(facility_name, day_of_week, hour) %>%
+    dplyr::mutate(
+      current_count = dplyr::if_else(
+        is.na(current_count),
+        median(current_count, na.rm = TRUE),
+        current_count
+      )
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(facility_name) %>%
+    dplyr::mutate(
+      current_count = dplyr::if_else(
+        is.na(current_count),
+        median(current_count, na.rm = TRUE),
+        current_count
+      )
+    ) %>%
+    dplyr::ungroup() %>%
     dplyr::arrange(facility_name, day_of_week, hour, week_start) %>%
     dplyr::group_by(facility_name, day_of_week, hour) %>%
     dplyr::mutate(
@@ -214,7 +251,26 @@ build_attendance_history <- function(
         .complete = TRUE
       )
     ) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    dplyr::group_by(facility_name, day_of_week, hour) %>%
+    dplyr::mutate(
+      lag_1w = dplyr::if_else(
+        is.na(lag_1w),
+        median(lag_1w, na.rm = TRUE),
+        lag_1w
+      ),
+      roll_4w = dplyr::if_else(
+        is.na(roll_4w),
+        median(roll_4w, na.rm = TRUE),
+        roll_4w
+      )
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      timestamp = lubridate::as_datetime(week_start) +
+        lubridate::days(match(day_of_week, days_of_week) - 1) +
+        lubridate::hours(hour)
+    )
 }
 
 
@@ -222,25 +278,32 @@ build_slot_lag_medians <- function(history) {
   history %>%
     dplyr::group_by(facility_name, day_of_week, hour) %>%
     dplyr::summarize(
-      lag_1w_med = median(current_count, na.rm = TRUE),
+      lag_1w_med = median(lag_1w, na.rm = TRUE),
       roll_4w_med = median(roll_4w, na.rm = TRUE),
+      count_med = median(current_count, na.rm = TRUE),
       .groups = "drop"
-    )
+    ) %>%
+    dplyr::mutate(
+      lag_1w_med = dplyr::coalesce(lag_1w_med, count_med),
+      roll_4w_med = dplyr::coalesce(roll_4w_med, lag_1w_med, count_med)
+    ) %>%
+    dplyr::select(-count_med)
 }
 
 
 lag_lookup_for_week <- function(history, ref_week) {
+  ref_week <- as.Date(ref_week)
   history %>%
     dplyr::filter(week_start <= ref_week) %>%
-    dplyr::arrange(facility_name, day_of_week, hour, week_start) %>%
+    dplyr::arrange(facility_name, day_of_week, hour, timestamp) %>%
     dplyr::group_by(facility_name, day_of_week, hour) %>%
     dplyr::slice_tail(n = 1) %>%
     dplyr::ungroup() %>%
     dplyr::transmute(
-      facility_name,
+      facility_name = as.character(facility_name),
       day_of_week,
       hour,
-      lag_1w = current_count,
+      lag_1w = lag_1w,
       roll_4w = roll_4w
     )
 }
@@ -274,15 +337,7 @@ join_slot_lags <- function(
     ) %>%
     dplyr::mutate(
       lag_1w = dplyr::coalesce(lag_1w, lag_1w_med),
-      roll_4w = dplyr::coalesce(roll_4w, roll_4w_med),
-      lag_1w = dplyr::coalesce(
-        lag_1w,
-        median(history$current_count, na.rm = TRUE)
-      ),
-      roll_4w = dplyr::coalesce(
-        roll_4w,
-        median(history$roll_4w, na.rm = TRUE)
-      )
+      roll_4w = dplyr::coalesce(roll_4w, roll_4w_med, lag_1w)
     ) %>%
     dplyr::select(-ref_week, -lag_1w_med, -roll_4w_med)
 }
