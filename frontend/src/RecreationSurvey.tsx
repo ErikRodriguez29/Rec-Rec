@@ -1,7 +1,4 @@
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Alert,
   Autocomplete,
   Box,
@@ -29,6 +26,11 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import GoogleCalendarBusyImporter from "./GoogleCalendarBusyImporter";
+import FacilityLocationGuideSection, {
+  FacilityGuideLink,
+  FacilityGuideProvider,
+} from "./FacilityLocationGuideSection";
+import PredictionHeatmaps from "./PredictionHeatmaps";
 import RecommendationsDisplay from "./RecommendationsDisplay";
 import { isRecommendationsPayload, type RecommendationsPayload } from "./recommendationsTypes";
 
@@ -564,250 +566,244 @@ export default function RecreationSurvey() {
   return (
     <Box sx={{ bgcolor: "grey.50", minHeight: "100vh", py: 4 }}>
       <Container maxWidth="lg">
-        <Stack spacing={3} component="form" onSubmit={handleSubmit}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-            UCSB Recreation Recommender
-          </Typography>
+        <FacilityGuideProvider recommendations={recommendations}>
+          <Stack spacing={3} component="form" onSubmit={handleSubmit}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
+              UCSB Recreation Recommender
+            </Typography>
 
-          <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Preferred exercise categories
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  General workout categories you&apos;d like to train for. We&apos;ll recommend the
-                  best facilities and times for these categories, but you may want to pick specific
-                  activities in the preferred activities field instead. This field is optional and
-                  you may choose to enter only preferred activities if needed, but one of the two
-                  fields must be filled.
-                </Typography>
-                <Autocomplete
-                  multiple
-                  options={[...EXERCISE_CATEGORIES]}
-                  value={categories}
-                  onChange={(_, v) => setCategories(v)}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Preferred exercise categories"
-                      placeholder="Choose one or more"
-                    />
-                  )}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Preferred activities
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Specialized activities you&apos;d like to do. Select everything you want included
-                  when recommending times. This field is optional and you may pick only general
-                  preferred exercise categories if needed, but one of the two fields must be filled.
-                </Typography>
-                <Autocomplete
-                  multiple
-                  options={[...PREFERRED_ACTIVITIES]}
-                  value={activities}
-                  onChange={(_, v) => setActivities(v)}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Preferred activities"
-                      placeholder="Choose one or more"
-                    />
-                  )}
-                />
-              </Box>
-            </Stack>
-          </Paper>
-
-          <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Facilities
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Enter your preferred facilities. See the collapsible menu for help locating your
-                  preferred facilities. Toggle the strict facility filter if you strictly only want
-                  us to recommend your preferred facilities; otherwise we&apos;ll try to recommend
-                  your preferred facilities but will be flexible if they happen to be full. Note
-                  this may cause recommendations to be empty if we can&apos;t find facilities with
-                  your preferred activities when the strict facility filter is on.
-                </Typography>
-              </Box>
-
-              <Accordion
-                defaultExpanded={false}
-                disableGutters
-                elevation={0}
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  "&:before": { display: "none" },
-                }}
-              >
-                <AccordionSummary aria-controls="facility-help-content" id="facility-help-header">
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Help locating your preferred facilities
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="body2" color="text.secondary">
-                    Facility location guide — coming soon.
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-
-              <Autocomplete
-                multiple
-                options={[...PREFERRED_FACILITIES]}
-                value={facilities}
-                onChange={(_, v) => setFacilities(v)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Preferred facilities"
-                    placeholder="Choose one or more locations"
-                  />
-                )}
-              />
-
-              <FormControl fullWidth>
-                <InputLabel id="facilities-hard-filter-label">Strict facility filter</InputLabel>
-                <Select<YesNo>
-                  labelId="facilities-hard-filter-label"
-                  label="Strict facility filter"
-                  value={facilitiesHardFilter}
-                  onChange={handleYesNo(setFacilitiesHardFilter)}
-                >
-                  <MenuItem value="">
-                    <em>Select</em>
-                  </MenuItem>
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-          </Paper>
-
-          <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Schedule
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Draw in your preferred hours to go to the gym and your unavailable hours in the
-                  following weekly grid. Sign in with Google to import your calendar events for when
-                  you are busy, or draw your unavailable hours manually. We&apos;ll try to recommend
-                  times within your preferred hours, but we&apos;ll be flexible in case your
-                  preferred facilities happen to be full.
-                </Typography>
-              </Box>
-
-              {googleCalendarConfigured ? (
-                <GoogleCalendarBusyImporter
-                  isHourOpen={isMainFacilityHourOpen}
-                  onMergeBusySlots={mergeGoogleBusySlots}
-                />
-              ) : null}
-
-              <WhenMeetScheduleGrid
-                brush={scheduleBrush}
-                onBrushChange={setScheduleBrush}
-                preferredSlots={preferredSlots}
-                unavailableSlots={unavailableSlots}
-                scheduleDrag={scheduleDrag}
-                onScheduleDragChange={setScheduleDrag}
-                paintScheduleCell={paintScheduleCell}
-                isSelectable={isMainFacilityHourOpen}
-              />
-
-              <FormControl fullWidth>
-                <InputLabel id="rain-filter-label">Rain filter</InputLabel>
-                <Select<YesNo>
-                  labelId="rain-filter-label"
-                  label="Rain filter"
-                  value={rainFilter}
-                  onChange={handleYesNo(setRainFilter)}
-                >
-                  <MenuItem value="">
-                    <em>Select</em>
-                  </MenuItem>
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </Select>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1.5, display: "block" }}
-                >
-                  We&apos;ll try to recommend times which don&apos;t observe rainy weather, but in
-                  case this is a hard blocker for you, indicate so above.
-                </Typography>
-              </FormControl>
-            </Stack>
-          </Paper>
-
-          <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={() => {
-                setActivities([]);
-                setFacilities([]);
-                setCategories([]);
-                setPreferredSlots(new Set());
-                setUnavailableSlots(new Set());
-                setScheduleBrush("preferred");
-                setScheduleDrag(null);
-                setRainFilter("");
-                setFacilitiesHardFilter("");
-                setRecommendLoading(false);
-                setRecommendError(null);
-                setRecommendations(null);
-              }}
-            >
-              Clear
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={recommendLoading}
-              startIcon={
-                recommendLoading ? (
-                  <CircularProgress color="inherit" size={18} thickness={6} />
-                ) : undefined
-              }
-              sx={recommendLoading ? { "& .MuiButton-startIcon": { mr: 1 } } : {}}
-            >
-              Get recommendations
-            </Button>
-          </Stack>
-
-          {recommendError !== null && <Alert severity="error">{recommendError}</Alert>}
-
-          {recommendations !== null && (
-            <Paper elevation={0} variant="outlined" sx={{ p: 2, bgcolor: "background.paper" }}>
-              <Stack spacing={2}>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
+              <Stack spacing={3}>
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    Your recommendations
+                  <Typography variant="h6" gutterBottom>
+                    Preferred exercise categories
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    A suggested visit for each day this week and next, plus detailed options when
-                    you focus on a specific activity or workout type.
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    General workout categories you&apos;d like to train for. We&apos;ll recommend
+                    the best facilities and times for these categories, but you may want to pick
+                    specific activities in the preferred activities field instead. This field is
+                    optional and you may choose to enter only preferred activities if needed, but
+                    one of the two fields must be filled.
                   </Typography>
+                  <Autocomplete
+                    multiple
+                    disableCloseOnSelect
+                    options={[...EXERCISE_CATEGORIES]}
+                    value={categories}
+                    onChange={(_, v) => setCategories(v)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Preferred exercise categories"
+                        placeholder="Choose one or more"
+                      />
+                    )}
+                  />
                 </Box>
-                <RecommendationsDisplay data={recommendations} />
+
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Preferred activities
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Specialized activities you&apos;d like to do. Select everything you want
+                    included when recommending times. This field is optional and you may pick only
+                    general preferred exercise categories if needed, but one of the two fields must
+                    be filled.
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    disableCloseOnSelect
+                    options={[...PREFERRED_ACTIVITIES]}
+                    value={activities}
+                    onChange={(_, v) => setActivities(v)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Preferred activities"
+                        placeholder="Choose one or more"
+                      />
+                    )}
+                  />
+                </Box>
               </Stack>
             </Paper>
-          )}
-        </Stack>
+
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Facilities
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" component="div">
+                    Enter your preferred facilities. See the <FacilityGuideLink /> section below for
+                    help locating them on campus. Toggle the strict facility filter if you strictly
+                    only want us to recommend your preferred facilities; otherwise we&apos;ll try to
+                    recommend your preferred facilities but will be flexible if they happen to be
+                    full. Note this may cause recommendations to be empty if we can&apos;t find
+                    facilities with your preferred activities when the strict facility filter is on.
+                  </Typography>
+                </Box>
+
+                <Autocomplete
+                  multiple
+                  disableCloseOnSelect
+                  options={[...PREFERRED_FACILITIES]}
+                  value={facilities}
+                  onChange={(_, v) => setFacilities(v)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Preferred facilities"
+                      placeholder="Choose one or more locations"
+                    />
+                  )}
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel id="facilities-hard-filter-label">Strict facility filter</InputLabel>
+                  <Select<YesNo>
+                    labelId="facilities-hard-filter-label"
+                    label="Strict facility filter"
+                    value={facilitiesHardFilter}
+                    onChange={handleYesNo(setFacilitiesHardFilter)}
+                  >
+                    <MenuItem value="">
+                      <em>Select</em>
+                    </MenuItem>
+                    <MenuItem value="yes">Yes</MenuItem>
+                    <MenuItem value="no">No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+            </Paper>
+
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Schedule
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Draw in your preferred hours to go to the gym and your unavailable hours in the
+                    following weekly grid. Sign in with Google to import your calendar events for
+                    when you are busy, or draw your unavailable hours manually. We&apos;ll try to
+                    recommend times within your preferred hours, but we&apos;ll be flexible in case
+                    your preferred facilities happen to be full.
+                  </Typography>
+                </Box>
+
+                {googleCalendarConfigured ? (
+                  <GoogleCalendarBusyImporter
+                    isHourOpen={isMainFacilityHourOpen}
+                    onMergeBusySlots={mergeGoogleBusySlots}
+                  />
+                ) : null}
+
+                <WhenMeetScheduleGrid
+                  brush={scheduleBrush}
+                  onBrushChange={setScheduleBrush}
+                  preferredSlots={preferredSlots}
+                  unavailableSlots={unavailableSlots}
+                  scheduleDrag={scheduleDrag}
+                  onScheduleDragChange={setScheduleDrag}
+                  paintScheduleCell={paintScheduleCell}
+                  isSelectable={isMainFacilityHourOpen}
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel id="rain-filter-label">Rain filter</InputLabel>
+                  <Select<YesNo>
+                    labelId="rain-filter-label"
+                    label="Rain filter"
+                    value={rainFilter}
+                    onChange={handleYesNo(setRainFilter)}
+                  >
+                    <MenuItem value="">
+                      <em>Select</em>
+                    </MenuItem>
+                    <MenuItem value="yes">Yes</MenuItem>
+                    <MenuItem value="no">No</MenuItem>
+                  </Select>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1.5, display: "block" }}
+                  >
+                    We&apos;ll try to recommend times which don&apos;t observe rainy weather, but in
+                    case this is a hard blocker for you, indicate so above.
+                  </Typography>
+                </FormControl>
+              </Stack>
+            </Paper>
+
+            <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end" }}>
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={() => {
+                  setActivities([]);
+                  setFacilities([]);
+                  setCategories([]);
+                  setPreferredSlots(new Set());
+                  setUnavailableSlots(new Set());
+                  setScheduleBrush("preferred");
+                  setScheduleDrag(null);
+                  setRainFilter("");
+                  setFacilitiesHardFilter("");
+                  setRecommendLoading(false);
+                  setRecommendError(null);
+                  setRecommendations(null);
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={recommendLoading}
+                startIcon={
+                  recommendLoading ? (
+                    <CircularProgress color="inherit" size={18} thickness={6} />
+                  ) : undefined
+                }
+                sx={recommendLoading ? { "& .MuiButton-startIcon": { mr: 1 } } : {}}
+              >
+                Get recommendations
+              </Button>
+            </Stack>
+
+            {recommendError !== null && <Alert severity="error">{recommendError}</Alert>}
+
+            {recommendations !== null && (
+              <Paper elevation={0} variant="outlined" sx={{ p: 2, bgcolor: "background.paper" }}>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                      Your recommendations
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.5 }}
+                      component="div"
+                    >
+                      A suggested visit for each day this week and next, plus detailed options when
+                      you focus on a specific activity or workout type. Facility names match the
+                      preferred facilities list — use the <FacilityGuideLink /> section below to see
+                      where each one is on the Rec Cen map.
+                    </Typography>
+                  </Box>
+                  <RecommendationsDisplay data={recommendations} />
+                </Stack>
+              </Paper>
+            )}
+
+            <FacilityLocationGuideSection />
+
+            <PredictionHeatmaps />
+          </Stack>
+        </FacilityGuideProvider>
       </Container>
     </Box>
   );

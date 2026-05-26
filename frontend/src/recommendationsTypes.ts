@@ -59,3 +59,26 @@ function isWeekRecommendations(value: unknown): value is WeekRecommendations {
   const week = value as Record<string, unknown>;
   return Array.isArray(week.by_category) && Array.isArray(week.overall);
 }
+
+function collectFacilitiesFromWeek(week: WeekRecommendations, names: Set<string>) {
+  for (const row of week.overall) {
+    names.add(row.facility_name);
+  }
+  for (const category of week.by_category) {
+    for (const day of category.schedule) {
+      for (const option of day.options) {
+        names.add(option.facility_name);
+      }
+    }
+  }
+}
+
+/** Unique facility names appearing in current- and next-week recommendations. */
+export function collectRecommendedFacilityNames(
+  payload: RecommendationsPayload,
+): ReadonlySet<string> {
+  const names = new Set<string>();
+  collectFacilitiesFromWeek(payload.current_week, names);
+  collectFacilitiesFromWeek(payload.next_week, names);
+  return names;
+}
