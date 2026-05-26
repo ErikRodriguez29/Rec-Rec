@@ -4,51 +4,42 @@ library(lubridate)
 library(skimr)
 library(shadowtext)
 
-#save_path <- "EDA/Week 10/"
+for (path in c(
+  "utils.R",
+  file.path("R", "utils.R"),
+  file.path("scripts", "R", "utils.R"),
+  file.path("src", "scripts", "R", "utils.R")
+)) {
+  if (file.exists(path)) {
+    source(path)
+    break
+  }
+}
+
 # ==============================
 # AUTO WEEK DIRECTORY HANDLING
 # ==============================
 
-# Week 1 starts January 26, 2026
-week1_start <- as.Date("2026-01-26")
-
-# Get today's date
-today_date <- Sys.Date()
-
-# Find Monday of current week
-current_monday <- today_date - lubridate::wday(today_date, week_start = 1) + 1
-
-# Find Monday of Week 1
-week1_monday <- week1_start - lubridate::wday(week1_start, week_start = 1) + 1
-
-# Calculate week number
-week_number <- as.integer(difftime(current_monday, week1_monday, units = "weeks")) + 1
+week_number <- get_week_info()$current_week
 
 # Build directory path
-save_path <- file.path("..", "EDA", paste0("Week ", week_number))
+save_path <- ensure_output_dir("EDA", paste0("Week ", week_number))
 
-# Create directory if it doesn't exist
-if (!dir.exists(save_path)) {
-  dir.create(save_path, recursive = TRUE)
-}
-
-can_save = TRUE
+can_save <- TRUE
 
 
-
-
-
-attendance_raw <- read_csv("../data/facility_counts.csv", na = c("N/A")) 
-attendance_cleaned = na.omit(attendance_raw) 
-attendance <- attendance_cleaned %>% 
-  mutate( 
-    timestamp = ymd_hms(timestamp), 
-    hour = hour(timestamp), 
-    day_of_week = factor(day_of_week, levels = 0:6, labels = c("M", "T", "W", "R", "F", "S", "U")), 
-    facility_name = factor(facility_name) ) %>% 
-  arrange(facility_name, timestamp) 
+attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
+attendance_cleaned <- na.omit(attendance_raw)
+attendance <- attendance_cleaned %>%
+  mutate(
+    timestamp = ymd_hms(timestamp),
+    hour = hour(timestamp),
+    day_of_week = factor(day_of_week, levels = 0:6, labels = DAYS_OF_WEEK),
+    facility_name = factor(facility_name)
+  ) %>%
+  arrange(facility_name, timestamp) %>%
+  filter_to_open_hours()
 skim(attendance)
-
 
 # 1 Average fullness of all Facilities
 attendance %>%
@@ -57,10 +48,10 @@ attendance %>%
     avg_pct = mean(percentage_filled),
     .groups = "drop"
   ) %>%
-  ggplot(aes(x = hour, y = day_of_week, fill = avg_pct, label = paste(signif(avg_pct, 2), "%", sep=""))) + 
+  ggplot(aes(x = hour, y = day_of_week, fill = avg_pct, label = paste(signif(avg_pct, 2), "%", sep = ""))) +
   geom_tile(color = "gray") +
-  geom_shadowtext(bg.colour = "white", color = "black", size = 4, bg.r = 0.08) +  
-  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) + 
+  geom_shadowtext(bg.colour = "white", color = "black", size = 4, bg.r = 0.08) +
+  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) +
   labs(
     title = "Weekly Occupancy Pattern (All Facilities)",
     x = "Hour of Day",
@@ -72,7 +63,7 @@ attendance %>%
     axis.text.x = element_text(angle = 0),
   )
 
-if (can_save){
+if (can_save) {
   ggsave(filename = "1Mean Weekly Occupancy.png", path = save_path, width = 11, height = 8)
 }
 
@@ -85,8 +76,8 @@ attendance %>%
   ) %>%
   ggplot(aes(x = hour, y = day_of_week, fill = avg_pct)) +
   geom_tile(color = "gray") +
-  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) + 
-  facet_wrap(~ facility_name) +
+  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) +
+  facet_wrap(~facility_name) +
   labs(
     title = "Weekly Occupancy by Facility",
     x = "Hour of Day",
@@ -98,52 +89,56 @@ attendance %>%
     strip.text = element_text(face = "bold")
   )
 
-if (can_save){
+if (can_save) {
   ggsave(filename = "2Weekly Occupancy (All Facilities).png", path = save_path, width = 16, height = 11)
 }
 
-# 3 Average fullness of most frequented places 
-# This includes all fitness centers, the MAC Court, and the Main Gym Courts 
+# 3 Average fullness of most frequented places
+# This includes all fitness centers, the MAC Court, and the Main Gym Courts
 values_to_include <- c("FC 1 - South Room", "FC 1- North Room", "FC 2 - 1st floor", "FC 2- Mezzanine", "FC 3 - MAC", "MAC Court", "Main Gym Court 1 (North)", "Main Gym Court 2 (South)")
-filtered_attendance <- attendance[(attendance$facility_name %in% values_to_include), ] 
-filtered_attendance %>% 
-  group_by(day_of_week, hour) %>% 
-  summarize( avg_pct = mean(percentage_filled), 
-             .groups = "drop" ) %>% 
-  ggplot(aes(x = hour, y = day_of_week, fill = avg_pct, label = paste(signif(avg_pct, 2), "%", sep=""))) + 
-  geom_tile(color = "gray") + 
-  geom_shadowtext(bg.colour = "white", color = "black", size = 4, bg.r = 0.065) + 
-  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) + 
-  labs( 
-    title = "Frequented Facilities Mean Weekly Occupancy (FCs, MAC, Main Gym Courts)", 
-    x = "Hour of Day", 
-    y = "Day of Week" 
-    ) + 
-  theme_minimal() + 
+filtered_attendance <- attendance[(attendance$facility_name %in% values_to_include), ]
+filtered_attendance %>%
+  group_by(day_of_week, hour) %>%
+  summarize(
+    avg_pct = mean(percentage_filled),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = hour, y = day_of_week, fill = avg_pct, label = paste(signif(avg_pct, 2), "%", sep = ""))) +
+  geom_tile(color = "gray") +
+  geom_shadowtext(bg.colour = "white", color = "black", size = 4, bg.r = 0.065) +
+  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) +
+  labs(
+    title = "Frequented Facilities Mean Weekly Occupancy (FCs, MAC, Main Gym Courts)",
+    x = "Hour of Day",
+    y = "Day of Week"
+  ) +
+  theme_minimal() +
   theme(
-    panel.grid = element_blank(), 
-    axis.text.x = element_text(angle = 0), )
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 0),
+  )
 
-if (can_save){
+if (can_save) {
   ggsave(filename = "3Mean Weekly Occupancy Frequented.png", path = save_path, width = 11, height = 8)
 }
 
 
-
-# 4 Fullness of frequented facilities 
-filtered_attendance %>% group_by(facility_name, day_of_week, hour) %>% 
-  summarize( avg_pct = mean(percentage_filled), .groups = "drop" ) %>% 
-  ggplot(aes(x = hour, y = day_of_week, fill = avg_pct)) + 
-  geom_tile(color = "gray") + 
+# 4 Fullness of frequented facilities
+filtered_attendance %>%
+  group_by(facility_name, day_of_week, hour) %>%
+  summarize(avg_pct = mean(percentage_filled), .groups = "drop") %>%
+  ggplot(aes(x = hour, y = day_of_week, fill = avg_pct)) +
+  geom_tile(color = "gray") +
   scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 50, limits = c(0, 100)) +
-  facet_wrap(~ facility_name) + 
-  labs( title = "Frequented Facilities Weekly Occupancy (FCs, MAC, Main Gym Courts)", x = "Hour of Day", y = "Day of Week" ) + 
-  theme_minimal() + 
-  theme( 
-    panel.grid = element_blank(), 
-    strip.text = element_text(face = "bold") )
+  facet_wrap(~facility_name) +
+  labs(title = "Frequented Facilities Weekly Occupancy (FCs, MAC, Main Gym Courts)", x = "Hour of Day", y = "Day of Week") +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
 
-if (can_save){
+if (can_save) {
   ggsave(filename = "4Weekly Occupancy Frequented Tiles.png", path = save_path, width = 11, height = 8)
 }
 
@@ -169,21 +164,21 @@ attendance %>%
     y = day_of_week,
     fill = avg_norm,
     label = signif(avg_norm, 2)
-  )) + 
+  )) +
   geom_tile(color = "gray") +
   geom_shadowtext(
     bg.colour = "white",
     color = "black",
     size = 4,
     bg.r = 0.08
-  ) +  
+  ) +
   scale_fill_gradient2(
     low = "darkgreen",
     mid = "yellow",
     high = "darkred",
     midpoint = 0.5,
     limits = c(0, 1)
-  ) + 
+  ) +
   labs(
     title = "Weekly Occupancy Pattern Normalized by Max Mean (All Facilities)",
     x = "Hour of Day",
@@ -208,7 +203,7 @@ max_mean_frequented <- filtered_attendance %>%
   summarize(max(avg_pct)) %>%
   pull()
 
-# 6 Normalized mean fullness of frequented places 
+# 6 Normalized mean fullness of frequented places
 filtered_attendance %>%
   group_by(day_of_week, hour) %>%
   summarize(
@@ -221,21 +216,21 @@ filtered_attendance %>%
     y = day_of_week,
     fill = avg_norm,
     label = signif(avg_norm, 2)
-  )) + 
+  )) +
   geom_tile(color = "gray") +
   geom_shadowtext(
     bg.colour = "white",
     color = "black",
     size = 4,
     bg.r = 0.08
-  ) +  
+  ) +
   scale_fill_gradient2(
     low = "darkgreen",
     mid = "yellow",
     high = "darkred",
     midpoint = 0.5,
     limits = c(0, 1)
-  ) + 
+  ) +
   labs(
     title = "Frequented Facilities Mean Weekly Occupancy Normalized by Max Mean",
     x = "Hour of Day",
@@ -247,7 +242,7 @@ filtered_attendance %>%
     axis.text.x = element_text(angle = 0)
   )
 
-if (can_save){
+if (can_save) {
   ggsave(filename = "6Mean Weekly Occupancy Frequented Normalized.png", path = save_path, width = 11, height = 8)
 }
 
@@ -279,8 +274,8 @@ attendance %>%
   ) %>%
   ggplot(aes(hour, day_of_week, fill = avg_norm)) +
   geom_tile(color = "gray") +
-  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 0.5, limits = c(0, 1)) + 
-  facet_wrap(~ facility_name) +
+  scale_fill_gradient2(low = "darkgreen", mid = "yellow", high = "darkred", midpoint = 0.5, limits = c(0, 1)) +
+  facet_wrap(~facility_name) +
   labs(
     title = "Weekly Occupancy Pattern (Normalized by Max of each Facility)"
   ) +
@@ -290,7 +285,7 @@ attendance %>%
     strip.text = element_text(face = "bold")
   )
 
-if (can_save){
+if (can_save) {
   ggsave(filename = "7Weekly Occupancy Normalized.png", path = save_path, width = 16.2, height = 11)
 }
 
