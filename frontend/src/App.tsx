@@ -10,8 +10,8 @@ const Home = () => (
     <Typography variant="body1" color="text.secondary">
       UCSB Recreation Center recommender — set preferences on the survey, then use Run recommender{" "}
       while developing (<code>pnpm dev</code> in <code>frontend/</code>). That runs{" "}
-      <code>scripts/recommender/recommend-times.py</code> locally and prints the forecast-based
-      times on the page.
+      <code>src/scripts/recommender/recommend-times.py</code> locally and shows structured output
+      from <code>src/output/recommendations/recommendations.json</code>.
     </Typography>
     <Link component={RouterLink} to="/survey" underline="hover">
       Open recreation preferences survey

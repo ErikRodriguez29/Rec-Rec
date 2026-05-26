@@ -26,6 +26,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import GoogleCalendarBusyImporter from "./GoogleCalendarBusyImporter";
+import RecommendationsDisplay from "./RecommendationsDisplay";
+import { isRecommendationsPayload, type RecommendationsPayload } from "./recommendationsTypes";
 
 const SCHEDULE_DAYS = [
   { code: "m", label: "Mon" },
@@ -430,7 +432,9 @@ export default function RecreationSurvey() {
   const [submittedPreview, setSubmittedPreview] = useState<string | null>(null);
   const [recommendLoading, setRecommendLoading] = useState(false);
   const [recommendError, setRecommendError] = useState<string | null>(null);
-  const [recommendOutput, setRecommendOutput] = useState<{
+  const [recommendations, setRecommendations] = useState<RecommendationsPayload | null>(null);
+  const [recommendationsSource, setRecommendationsSource] = useState<string | null>(null);
+  const [recommendRunDetails, setRecommendRunDetails] = useState<{
     ok: boolean;
     stdout: string;
     stderr: string;
@@ -452,6 +456,28 @@ export default function RecreationSurvey() {
   useEffect(() => {
     setPreferredSlots((prev) => filterSlotsToStandardHours(prev));
     setUnavailableSlots((prev) => filterSlotsToStandardHours(prev));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSaved = async () => {
+      try {
+        const res = await fetch("/api/recommendations");
+        if (!res.ok || cancelled) return;
+        const raw: unknown = await res.json();
+        const data = raw as { recommendations?: unknown };
+        if (isRecommendationsPayload(data.recommendations)) {
+          setRecommendations(data.recommendations);
+          setRecommendationsSource("Loaded from src/output/recommendations/recommendations.json");
+        }
+      } catch {
+        // Dev server not running or file missing — ignore.
+      }
+    };
+    void loadSaved();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const preferredDaysHours = useMemo(
@@ -531,13 +557,15 @@ export default function RecreationSurvey() {
     setRecommendError(null);
     if (activities.length === 0 && categories.length === 0) {
       setSubmittedPreview(null);
-      setRecommendOutput(null);
+      setRecommendations(null);
+      setRecommendationsSource(null);
+      setRecommendRunDetails(null);
       setRecommendError("Pick at least one preferred activity or exercise category.");
       return;
     }
 
     setSubmittedPreview(commandPreview);
-    setRecommendOutput(null);
+    setRecommendRunDetails(null);
 
     type RecommendPayload = {
       preferredActivities?: string;
@@ -573,6 +601,7 @@ export default function RecreationSurvey() {
         stderr?: string;
         exitCode?: number | null;
         error?: string;
+        recommendations?: unknown;
       };
 
       if (!res.ok) {
@@ -586,13 +615,22 @@ export default function RecreationSurvey() {
 
       const stdout = typeof data.stdout === "string" ? data.stdout : "";
       const stderr = typeof data.stderr === "string" ? data.stderr : "";
-      setRecommendOutput({
+      setRecommendRunDetails({
         ok: Boolean(data.ok),
         stdout,
         stderr,
         exitCode:
           typeof data.exitCode === "number" || data.exitCode === null ? data.exitCode : null,
       });
+
+      if (isRecommendationsPayload(data.recommendations)) {
+        setRecommendations(data.recommendations);
+        setRecommendationsSource(
+          data.ok ? "Updated from src/output/recommendations/recommendations.json" : null,
+        );
+      } else if (data.ok) {
+        setRecommendError("Recommender finished but recommendations.json was missing or invalid.");
+      }
     } catch {
       setRecommendError(
         "Could not reach the recommendation runner. Run the app with `pnpm dev` (development server proxies /api/recommend to Python).",
@@ -611,9 +649,10 @@ export default function RecreationSurvey() {
               Recreation time preferences
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Tell us how you like to train, then scroll down and submit with Run recommender. In
-              development, this calls your local <code>recommend-times.py</code> and shows stdout
-              below the form — no copy-pasting into a terminal.
+              Tell us how you like to train, then submit with Run recommender. In development this
+              runs <code>src/scripts/recommender/recommend-times.py</code> and displays{" "}
+              <code>src/output/recommendations/recommendations.json</code> below — overall visits
+              for this week and next, plus per-activity options in the dropdown.
             </Typography>
           </Box>
 
@@ -796,7 +835,9 @@ export default function RecreationSurvey() {
                 setSubmittedPreview(null);
                 setRecommendLoading(false);
                 setRecommendError(null);
-                setRecommendOutput(null);
+                setRecommendations(null);
+                setRecommendationsSource(null);
+                setRecommendRunDetails(null);
               }}
             >
               Clear
@@ -827,45 +868,55 @@ export default function RecreationSurvey() {
             </Alert>
           )}
 
-          {recommendOutput !== null && (
+          {recommendations !== null && (
             <Paper elevation={0} variant="outlined" sx={{ p: 2, bgcolor: "background.paper" }}>
-              <Stack spacing={1.5}>
+              <Stack spacing={2}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {recommendOutput.ok
-                    ? "Recommendations output"
-                    : "Recommender finished with a non-zero exit code"}
+                  Your recommendations
                 </Typography>
-                {!recommendOutput.ok && (
-                  <Alert severity="warning">
-                    Exit code {recommendOutput.exitCode ?? "unknown"}. Review the full output below.
-                  </Alert>
-                )}
-                <Typography
-                  component="pre"
-                  variant="body2"
-                  sx={{
-                    m: 0,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    fontFamily: '"JetBrains Mono", "Roboto Mono", ui-monospace, monospace',
-                    fontSize: 13,
-                  }}
-                >
-                  {(() => {
-                    const blocks: string[] = [];
-                    if (recommendOutput.stderr.trim().length > 0)
-                      blocks.push("--- stderr ---\n" + recommendOutput.stderr.trim());
-                    blocks.push(recommendOutput.stdout.trim());
-                    return blocks.filter((b) => b.length > 0).join("\n\n") || "(no output)";
-                  })()}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  The dev server runs <code>scripts/recommender/recommend-times.py</code> locally;
-                  previews of static builds have no recommendation API unless you add one.
-                </Typography>
+                <RecommendationsDisplay
+                  data={recommendations}
+                  sourceNote={recommendationsSource ?? undefined}
+                />
               </Stack>
             </Paper>
           )}
+
+          {recommendRunDetails !== null &&
+            (!recommendRunDetails.ok || recommendRunDetails.stderr.trim().length > 0) && (
+              <Paper elevation={0} variant="outlined" sx={{ p: 2, bgcolor: "background.paper" }}>
+                <Stack spacing={1.5}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {recommendRunDetails.ok ? "Runner log" : "Recommender error details"}
+                  </Typography>
+                  {!recommendRunDetails.ok && (
+                    <Alert severity="warning">
+                      Exit code {recommendRunDetails.exitCode ?? "unknown"}.
+                    </Alert>
+                  )}
+                  <Typography
+                    component="pre"
+                    variant="body2"
+                    sx={{
+                      m: 0,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      fontFamily: '"JetBrains Mono", "Roboto Mono", ui-monospace, monospace',
+                      fontSize: 13,
+                    }}
+                  >
+                    {(() => {
+                      const blocks: string[] = [];
+                      if (recommendRunDetails.stderr.trim().length > 0)
+                        blocks.push("--- stderr ---\n" + recommendRunDetails.stderr.trim());
+                      if (!recommendRunDetails.ok && recommendRunDetails.stdout.trim().length > 0)
+                        blocks.push(recommendRunDetails.stdout.trim());
+                      return blocks.filter((b) => b.length > 0).join("\n\n") || "(no output)";
+                    })()}
+                  </Typography>
+                </Stack>
+              </Paper>
+            )}
         </Stack>
       </Container>
     </Box>

@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { Buffer } from "node:buffer";
+import { readFile } from "node:fs/promises";
 import type { IncomingMessage } from "node:http";
 import { join } from "node:path";
 import process from "node:process";
@@ -100,10 +101,26 @@ function runRecommend(
   });
 }
 
-/** Dev-only: POST /api/recommend runs scripts/recommender/recommend-times.py from the repo root you pass in. */
+async function readRecommendationsJson(recommendationsPath: string): Promise<unknown | null> {
+  try {
+    const text = await readFile(recommendationsPath, "utf8");
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+/** Dev-only: runs src/scripts/recommender/recommend-times.py; serves src/output/recommendations/recommendations.json. */
 export function recommendDevApiPlugin(repoRoot: string): Plugin {
-  const scriptDir = join(repoRoot, "scripts", "recommender");
+  const scriptDir = join(repoRoot, "src", "scripts", "recommender");
   const scriptRelative = "recommend-times.py";
+  const recommendationsPath = join(
+    repoRoot,
+    "src",
+    "output",
+    "recommendations",
+    "recommendations.json",
+  );
 
   return {
     name: "recommend-dev-api",
@@ -112,18 +129,49 @@ export function recommendDevApiPlugin(repoRoot: string): Plugin {
         const raw = req.url ?? "";
         const pathname = raw.split("?")[0] ?? "";
 
-        if (pathname !== "/api/recommend") {
+        const isRecommendPost = pathname === "/api/recommend";
+        const isRecommendationsGet = pathname === "/api/recommendations";
+
+        if (!isRecommendPost && !isRecommendationsGet) {
           next();
           return;
         }
 
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+        res.setHeader(
+          "Access-Control-Allow-Methods",
+          isRecommendationsGet ? "GET, OPTIONS" : "POST, OPTIONS",
+        );
         res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
         if (req.method === "OPTIONS") {
           res.statusCode = 204;
           res.end();
+          return;
+        }
+
+        if (isRecommendationsGet) {
+          if (req.method !== "GET") {
+            res.statusCode = 405;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Method not allowed" }));
+            return;
+          }
+          const recommendations = await readRecommendationsJson(recommendationsPath);
+          if (recommendations === null) {
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({
+                error: "recommendations.json not found. Run the recommender first.",
+                path: recommendationsPath,
+              }),
+            );
+            return;
+          }
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ ok: true, recommendations }));
           return;
         }
 
@@ -163,6 +211,8 @@ export function recommendDevApiPlugin(repoRoot: string): Plugin {
             scriptRelative,
             parsed,
           );
+          const recommendations =
+            exitCode === 0 ? await readRecommendationsJson(recommendationsPath) : null;
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json");
           res.end(
@@ -171,6 +221,7 @@ export function recommendDevApiPlugin(repoRoot: string): Plugin {
               exitCode,
               stdout,
               stderr,
+              recommendations,
             }),
           );
         } catch (e) {
