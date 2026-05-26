@@ -19,3 +19,8 @@ __pycache__/
 src/scripts/raw.json
 /scripts/
 .Rproj.user
+
+# Frontend / Node (pnpm local store, Vite, TypeScript)
+.pnpm-store/
+.vite/
+*.tsbuildinfo

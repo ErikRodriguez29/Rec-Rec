@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# pnpm local store, Vite cache, TypeScript build info
+.pnpm-store/
+.vite/
+*.tsbuildinfo
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
