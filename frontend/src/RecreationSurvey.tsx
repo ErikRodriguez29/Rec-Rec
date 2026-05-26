@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Autocomplete,
   Box,
@@ -271,11 +274,6 @@ function WhenMeetScheduleGrid(props: {
             Unavailable (red)
           </ToggleButton>
         </ToggleButtonGroup>
-        <Typography variant="body2" color="text.secondary">
-          Click or drag to paint. Starting on a filled cell clears that color for the whole stroke;
-          starting on empty fills with the selected color. You cannot paint green on red hours or
-          red on green — switch modes and clear a cell first if you need to change it.
-        </Typography>
       </Stack>
 
       <Box
@@ -402,19 +400,6 @@ function WhenMeetScheduleGrid(props: {
           ))}
         </Box>
       </Box>
-
-      <Stack spacing={0.5}>
-        <Typography variant="caption" color="text.secondary">
-          {preferredSlots.size === 0
-            ? "Preferred: (none)"
-            : `Preferred: ${serializeScheduleSlots(preferredSlots)}`}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {unavailableSlots.size === 0
-            ? "Unavailable: (none)"
-            : `Unavailable: ${serializeScheduleSlots(unavailableSlots)}`}
-        </Typography>
-      </Stack>
     </Stack>
   );
 }
@@ -429,17 +414,9 @@ export default function RecreationSurvey() {
   const [scheduleDrag, setScheduleDrag] = useState<ScheduleDragSession | null>(null);
   const [rainFilter, setRainFilter] = useState<YesNo>("");
   const [facilitiesHardFilter, setFacilitiesHardFilter] = useState<YesNo>("");
-  const [submittedPreview, setSubmittedPreview] = useState<string | null>(null);
   const [recommendLoading, setRecommendLoading] = useState(false);
   const [recommendError, setRecommendError] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationsPayload | null>(null);
-  const [recommendationsSource, setRecommendationsSource] = useState<string | null>(null);
-  const [recommendRunDetails, setRecommendRunDetails] = useState<{
-    ok: boolean;
-    stdout: string;
-    stderr: string;
-    exitCode: number | null;
-  } | null>(null);
 
   useEffect(() => {
     const endDrag = () => {
@@ -456,28 +433,6 @@ export default function RecreationSurvey() {
   useEffect(() => {
     setPreferredSlots((prev) => filterSlotsToStandardHours(prev));
     setUnavailableSlots((prev) => filterSlotsToStandardHours(prev));
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadSaved = async () => {
-      try {
-        const res = await fetch("/api/recommendations");
-        if (!res.ok || cancelled) return;
-        const raw: unknown = await res.json();
-        const data = raw as { recommendations?: unknown };
-        if (isRecommendationsPayload(data.recommendations)) {
-          setRecommendations(data.recommendations);
-          setRecommendationsSource("Loaded from src/output/recommendations/recommendations.json");
-        }
-      } catch {
-        // Dev server not running or file missing — ignore.
-      }
-    };
-    void loadSaved();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const preferredDaysHours = useMemo(
@@ -525,29 +480,6 @@ export default function RecreationSurvey() {
     }
   };
 
-  const commandPreview = useMemo(() => {
-    const parts: string[] = ["python recommend-times.py"];
-    if (activities.length) parts.push(`--preferred-activities "${joinCsv(activities)}"`);
-    if (facilities.length) parts.push(`--preferred-facilities "${facilities.join("; ")}"`);
-    if (categories.length) parts.push(`--preferred-exercise-categories "${joinCsv(categories)}"`);
-    if (preferredDaysHours.trim())
-      parts.push(`--preferred-days-hours "${preferredDaysHours.trim()}"`);
-    if (unavailableDaysHours.trim())
-      parts.push(`--unavailable-days-hours "${unavailableDaysHours.trim()}"`);
-    if (rainFilter) parts.push(`--rain-filter ${rainFilter}`);
-    if (facilitiesHardFilter)
-      parts.push(`--preferred-facilities-hard-filter ${facilitiesHardFilter}`);
-    return parts.join(" \\\n  ");
-  }, [
-    activities,
-    facilities,
-    categories,
-    preferredDaysHours,
-    unavailableDaysHours,
-    rainFilter,
-    facilitiesHardFilter,
-  ]);
-
   const handleYesNo = (setter: (v: YesNo) => void) => (e: SelectChangeEvent<YesNo>) => {
     setter(e.target.value as YesNo);
   };
@@ -556,16 +488,10 @@ export default function RecreationSurvey() {
     e.preventDefault();
     setRecommendError(null);
     if (activities.length === 0 && categories.length === 0) {
-      setSubmittedPreview(null);
       setRecommendations(null);
-      setRecommendationsSource(null);
-      setRecommendRunDetails(null);
       setRecommendError("Pick at least one preferred activity or exercise category.");
       return;
     }
-
-    setSubmittedPreview(commandPreview);
-    setRecommendRunDetails(null);
 
     type RecommendPayload = {
       preferredActivities?: string;
@@ -587,6 +513,7 @@ export default function RecreationSurvey() {
     if (rainFilter) payload.rainFilter = rainFilter;
     if (facilitiesHardFilter) payload.preferredFacilitiesHardFilter = facilitiesHardFilter;
 
+    setRecommendations(null);
     setRecommendLoading(true);
     try {
       const res = await fetch("/api/recommend", {
@@ -605,35 +532,29 @@ export default function RecreationSurvey() {
       };
 
       if (!res.ok) {
-        const errMsg =
-          typeof data.error === "string" && data.error.length > 0
-            ? data.error
-            : `Recommendation request failed (HTTP ${res.status}).`;
-        setRecommendError(errMsg);
+        setRecommendError(
+          "We couldn't generate your recommendations right now. Please try again in a moment.",
+        );
         return;
       }
 
-      const stdout = typeof data.stdout === "string" ? data.stdout : "";
-      const stderr = typeof data.stderr === "string" ? data.stderr : "";
-      setRecommendRunDetails({
-        ok: Boolean(data.ok),
-        stdout,
-        stderr,
-        exitCode:
-          typeof data.exitCode === "number" || data.exitCode === null ? data.exitCode : null,
-      });
+      if (!data.ok) {
+        setRecommendError(
+          "Something went wrong while building your schedule. Please review your preferences and try again.",
+        );
+        return;
+      }
 
       if (isRecommendationsPayload(data.recommendations)) {
         setRecommendations(data.recommendations);
-        setRecommendationsSource(
-          data.ok ? "Updated from src/output/recommendations/recommendations.json" : null,
+      } else {
+        setRecommendError(
+          "Your schedule was processed, but we couldn't display the results. Please try again.",
         );
-      } else if (data.ok) {
-        setRecommendError("Recommender finished but recommendations.json was missing or invalid.");
       }
     } catch {
       setRecommendError(
-        "Could not reach the recommendation runner. Run the app with `pnpm dev` (development server proxies /api/recommend to Python).",
+        "We couldn't reach the server to generate recommendations. Check your connection and try again.",
       );
     } finally {
       setRecommendLoading(false);
@@ -644,56 +565,102 @@ export default function RecreationSurvey() {
     <Box sx={{ bgcolor: "grey.50", minHeight: "100vh", py: 4 }}>
       <Container maxWidth="lg">
         <Stack spacing={3} component="form" onSubmit={handleSubmit}>
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-              Recreation time preferences
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Tell us how you like to train, then submit with Run recommender. In development this
-              runs <code>src/scripts/recommender/recommend-times.py</code> and displays{" "}
-              <code>src/output/recommendations/recommendations.json</code> below — overall visits
-              for this week and next, plus per-activity options in the dropdown.
-            </Typography>
-          </Box>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
+            UCSB Recreation Recommender
+          </Typography>
 
           <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
             <Stack spacing={3}>
-              <Typography variant="h6">Activities &amp; workout focus</Typography>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Preferred exercise categories
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  General workout categories you&apos;d like to train for. We&apos;ll recommend the
+                  best facilities and times for these categories, but you may want to pick specific
+                  activities in the preferred activities field instead. This field is optional and
+                  you may choose to enter only preferred activities if needed, but one of the two
+                  fields must be filled.
+                </Typography>
+                <Autocomplete
+                  multiple
+                  options={[...EXERCISE_CATEGORIES]}
+                  value={categories}
+                  onChange={(_, v) => setCategories(v)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Preferred exercise categories"
+                      placeholder="Choose one or more"
+                    />
+                  )}
+                />
+              </Box>
 
-              <Autocomplete
-                multiple
-                options={[...PREFERRED_ACTIVITIES]}
-                value={activities}
-                onChange={(_, v) => setActivities(v)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Preferred activities"
-                    placeholder="Choose one or more"
-                    helperText="Select everything you want included when recommending times."
-                  />
-                )}
-              />
-
-              <Autocomplete
-                multiple
-                options={[...EXERCISE_CATEGORIES]}
-                value={categories}
-                onChange={(_, v) => setCategories(v)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Preferred exercise categories"
-                    placeholder="Choose one or more"
-                  />
-                )}
-              />
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Preferred activities
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Specialized activities you&apos;d like to do. Select everything you want included
+                  when recommending times. This field is optional and you may pick only general
+                  preferred exercise categories if needed, but one of the two fields must be filled.
+                </Typography>
+                <Autocomplete
+                  multiple
+                  options={[...PREFERRED_ACTIVITIES]}
+                  value={activities}
+                  onChange={(_, v) => setActivities(v)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Preferred activities"
+                      placeholder="Choose one or more"
+                    />
+                  )}
+                />
+              </Box>
             </Stack>
           </Paper>
 
           <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
             <Stack spacing={3}>
-              <Typography variant="h6">Facilities</Typography>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Facilities
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Enter your preferred facilities. See the collapsible menu for help locating your
+                  preferred facilities. Toggle the strict facility filter if you strictly only want
+                  us to recommend your preferred facilities; otherwise we&apos;ll try to recommend
+                  your preferred facilities but will be flexible if they happen to be full. Note
+                  this may cause recommendations to be empty if we can&apos;t find facilities with
+                  your preferred activities when the strict facility filter is on.
+                </Typography>
+              </Box>
+
+              <Accordion
+                defaultExpanded={false}
+                disableGutters
+                elevation={0}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  "&:before": { display: "none" },
+                }}
+              >
+                <AccordionSummary aria-controls="facility-help-content" id="facility-help-header">
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Help locating your preferred facilities
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="body2" color="text.secondary">
+                    Facility location guide — coming soon.
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
 
               <Autocomplete
                 multiple
@@ -723,14 +690,6 @@ export default function RecreationSurvey() {
                   <MenuItem value="yes">Yes</MenuItem>
                   <MenuItem value="no">No</MenuItem>
                 </Select>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 0.5, display: "block" }}
-                >
-                  Matches <code>--preferred-facilities-hard-filter</code>: when yes, recommendations
-                  only use facilities you selected above.
-                </Typography>
               </FormControl>
             </Stack>
           </Paper>
@@ -741,28 +700,12 @@ export default function RecreationSurvey() {
                 <Typography variant="h6" gutterBottom>
                   Schedule
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Selectable cells follow{" "}
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    main facility standard hours
-                  </Box>
-                  : Monday–Thursday 6 a.m.–11 p.m.; Friday 6 a.m.–9 p.m.; Saturday 9 a.m.–9 p.m.;
-                  Sunday 9 a.m.–10 p.m. Shaded blocks are outside those hours.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  For planning pools or the climbing center specifically:{" "}
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Pools
-                  </Box>{" "}
-                  — Monday–Friday 6:30 a.m.–8 p.m.; Saturday–Sunday 9 a.m.–8 p.m.{" "}
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Climbing Center
-                  </Box>{" "}
-                  — Monday–Thursday 11:30 a.m.–10 p.m.; Friday–Sunday 11:30 a.m.–8:30 p.m.
-                </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  One weekly grid (like When2Meet): pick green or red mode above, then click or drag
-                  to mark preferred vs unavailable times.
+                  Draw in your preferred hours to go to the gym and your unavailable hours in the
+                  following weekly grid. Sign in with Google to import your calendar events for when
+                  you are busy, or draw your unavailable hours manually. We&apos;ll try to recommend
+                  times within your preferred hours, but we&apos;ll be flexible in case your
+                  preferred facilities happen to be full.
                 </Typography>
               </Box>
 
@@ -771,16 +714,7 @@ export default function RecreationSurvey() {
                   isHourOpen={isMainFacilityHourOpen}
                   onMergeBusySlots={mergeGoogleBusySlots}
                 />
-              ) : (
-                <Alert severity="info">
-                  To pick Google Calendar events as busy times, create an OAuth Web Client ID,
-                  enable the Calendar API for that project, then set <code>GOOGLE_CLIENT_ID</code>{" "}
-                  in the project <code>.env</code> file. Add your dev origin (for example{" "}
-                  <code>http://localhost:5173</code>) under Authorized JavaScript origins. Keep{" "}
-                  <code>GOOGLE_CLIENT_SECRET</code> server-side only — this app uses the public
-                  client id and does not bundle the secret.
-                </Alert>
-              )}
+              ) : null}
 
               <WhenMeetScheduleGrid
                 brush={scheduleBrush}
@@ -808,11 +742,12 @@ export default function RecreationSurvey() {
                   <MenuItem value="no">No</MenuItem>
                 </Select>
                 <Typography
-                  variant="caption"
+                  variant="body2"
                   color="text.secondary"
-                  sx={{ mt: 0.5, display: "block" }}
+                  sx={{ mt: 1.5, display: "block" }}
                 >
-                  Matches <code>--rain-filter</code> for outdoor-sensitive planning.
+                  We&apos;ll try to recommend times which don&apos;t observe rainy weather, but in
+                  case this is a hard blocker for you, indicate so above.
                 </Typography>
               </FormControl>
             </Stack>
@@ -832,12 +767,9 @@ export default function RecreationSurvey() {
                 setScheduleDrag(null);
                 setRainFilter("");
                 setFacilitiesHardFilter("");
-                setSubmittedPreview(null);
                 setRecommendLoading(false);
                 setRecommendError(null);
                 setRecommendations(null);
-                setRecommendationsSource(null);
-                setRecommendRunDetails(null);
               }}
             >
               Clear
@@ -853,70 +785,28 @@ export default function RecreationSurvey() {
               }
               sx={recommendLoading ? { "& .MuiButton-startIcon": { mr: 1 } } : {}}
             >
-              Run recommender
+              Get recommendations
             </Button>
           </Stack>
 
           {recommendError !== null && <Alert severity="error">{recommendError}</Alert>}
 
-          {submittedPreview !== null && (
-            <Alert severity="info" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Equivalent CLI (for reference)
-              </Typography>
-              {submittedPreview}
-            </Alert>
-          )}
-
           {recommendations !== null && (
             <Paper elevation={0} variant="outlined" sx={{ p: 2, bgcolor: "background.paper" }}>
               <Stack spacing={2}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Your recommendations
-                </Typography>
-                <RecommendationsDisplay
-                  data={recommendations}
-                  sourceNote={recommendationsSource ?? undefined}
-                />
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    Your recommendations
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    A suggested visit for each day this week and next, plus detailed options when
+                    you focus on a specific activity or workout type.
+                  </Typography>
+                </Box>
+                <RecommendationsDisplay data={recommendations} />
               </Stack>
             </Paper>
           )}
-
-          {recommendRunDetails !== null &&
-            (!recommendRunDetails.ok || recommendRunDetails.stderr.trim().length > 0) && (
-              <Paper elevation={0} variant="outlined" sx={{ p: 2, bgcolor: "background.paper" }}>
-                <Stack spacing={1.5}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    {recommendRunDetails.ok ? "Runner log" : "Recommender error details"}
-                  </Typography>
-                  {!recommendRunDetails.ok && (
-                    <Alert severity="warning">
-                      Exit code {recommendRunDetails.exitCode ?? "unknown"}.
-                    </Alert>
-                  )}
-                  <Typography
-                    component="pre"
-                    variant="body2"
-                    sx={{
-                      m: 0,
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                      fontFamily: '"JetBrains Mono", "Roboto Mono", ui-monospace, monospace',
-                      fontSize: 13,
-                    }}
-                  >
-                    {(() => {
-                      const blocks: string[] = [];
-                      if (recommendRunDetails.stderr.trim().length > 0)
-                        blocks.push("--- stderr ---\n" + recommendRunDetails.stderr.trim());
-                      if (!recommendRunDetails.ok && recommendRunDetails.stdout.trim().length > 0)
-                        blocks.push(recommendRunDetails.stdout.trim());
-                      return blocks.filter((b) => b.length > 0).join("\n\n") || "(no output)";
-                    })()}
-                  </Typography>
-                </Stack>
-              </Paper>
-            )}
         </Stack>
       </Container>
     </Box>

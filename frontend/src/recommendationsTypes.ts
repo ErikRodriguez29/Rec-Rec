@@ -24,6 +24,20 @@ export type OverallRecommendation = {
   time_of_day: string;
 };
 
+/** Second-ranked time for the same activity/category on that day (from by_category options). */
+export function getOverallAlternateOption(
+  week: WeekRecommendations,
+  row: OverallRecommendation,
+): RecommendationOption | null {
+  const category = week.by_category.find(
+    (c) => c.id === row.activity_or_category || c.label === row.activity_or_category,
+  );
+  if (category === undefined) return null;
+  const dayBlock = category.schedule.find((d) => d.day === row.day);
+  if (dayBlock === undefined || dayBlock.options.length < 2) return null;
+  return dayBlock.options[1] ?? null;
+}
+
 export type WeekRecommendations = {
   by_category: CategoryRecommendations[];
   overall: OverallRecommendation[];

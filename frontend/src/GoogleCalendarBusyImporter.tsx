@@ -357,10 +357,6 @@ export default function GoogleCalendarBusyImporter(props: Props) {
               Clear calendars
             </Button>
           </Stack>
-          <Typography variant="caption" color="text.secondary">
-            Pick which calendars to scan (&quot;All calendars&quot; selects every list entry Google
-            exposes to this app).
-          </Typography>
         </Stack>
       )}
 
