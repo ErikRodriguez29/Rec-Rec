@@ -32,7 +32,7 @@ const FACILITY_ACTIVITIES: Readonly<Record<string, readonly string[]>> = {
   "FC 1 - South Room": ["arm machines", "core machines", "leg presses", "weight lifting"],
   "FC 2 - 1st floor": [
     "arm & leg machines",
-    "stairmasters",
+    "stairmasters (stair machines)",
     "treadmills",
     "weight crunch machines",
     "weight lifting",

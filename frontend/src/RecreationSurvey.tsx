@@ -138,7 +138,6 @@ const PREFERRED_ACTIVITIES = [
   "core machines",
   "leg presses",
   "arm & leg machines",
-  "stairmasters",
   "weight crunch machines",
   "hockey",
   "skating",
