@@ -331,7 +331,7 @@ exercise_categories <- tribble(
   "Outdoor Fitness 2 (Behind Pottery)", c("cardio"), c("bike machines", "ellipticals (precor branded machines)"),
   "FC 1- North Room", c("arms", "core", "legs", "weight training"), c("arm machines", "core machines", "leg presses", "weight lifting"),
   "FC 1 - South Room", c("arms", "core", "legs", "weight training"), c("arm machines", "core machines", "leg presses", "weight lifting"),
-  "FC 2 - 1st floor", c("cardio", "core", "legs", "weight training"), c("arm & leg machines", "stairmasters", "treadmills", "weight crunch machines", "weight lifting"),
+  "FC 2 - 1st floor", c("cardio", "core", "legs", "weight training"), c("arm & leg machines", "stairmasters (stair machines)", "treadmills", "weight crunch machines", "weight lifting"),
   "FC 2- Mezzanine", c("cardio", "legs"), c("ellipticals (precor branded machines)", "treadmills"),
   "FC 3 - MAC", c("arms", "cardio", "core", "legs", "weight training"), c("arm machines", "leg presses", "treadmills", "weight crunch machines", "weight lifting"),
   "MAC Court", c("NA"), c("hockey", "skating"), # Idk why this is included in facility counts lol
