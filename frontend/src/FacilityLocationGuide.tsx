@@ -1,8 +1,39 @@
-import { Box, Stack, Typography, alpha } from "@mui/material";
-import { FACILITY_LOCATIONS, isFacilityLocationHighlighted } from "./facilityLocations";
+import { Box, Link, Stack, Typography, alpha } from "@mui/material";
+import { useMemo, useState } from "react";
+import { FacilitiesMap, MapSelectionDetails } from "./FacilitiesMap";
+import {
+  entryMatchesMapNumber,
+  formatAvailableActivities,
+  getActivitiesForLocation,
+  getFacilityLocationsByMapNumber,
+  getFacilityLocationsSortedByMapNumber,
+  isFacilityLocationHighlighted,
+} from "./facilityLocations";
 
-function formatMapRef(mapNumbers: number[]): string {
-  return mapNumbers.map((n) => `#${n}`).join(", ");
+function formatMapRef(
+  mapNumbers: number[],
+  onSelect: (n: number) => void,
+  selected: number | null,
+) {
+  return mapNumbers.map((n, i) => (
+    <span key={n}>
+      {i > 0 ? ", " : ""}
+      <Link
+        component="button"
+        type="button"
+        variant="body2"
+        underline="hover"
+        onClick={() => onSelect(n)}
+        sx={{
+          fontWeight: selected === n ? 700 : 500,
+          color: selected === n ? "primary.main" : "text.secondary",
+          verticalAlign: "baseline",
+        }}
+      >
+        #{n}
+      </Link>
+    </span>
+  ));
 }
 
 type FacilityLocationGuideProps = {
@@ -12,7 +43,15 @@ type FacilityLocationGuideProps = {
 export default function FacilityLocationGuide({
   highlightedFacilities,
 }: FacilityLocationGuideProps) {
+  const [selectedMapNumber, setSelectedMapNumber] = useState<number | null>(null);
   const showHighlights = highlightedFacilities !== undefined && highlightedFacilities.size > 0;
+
+  const selectedLocations = useMemo(
+    () => (selectedMapNumber === null ? [] : getFacilityLocationsByMapNumber(selectedMapNumber)),
+    [selectedMapNumber],
+  );
+
+  const locationsByMapNumber = useMemo(() => getFacilityLocationsSortedByMapNumber(), []);
 
   return (
     <Stack spacing={2}>
@@ -24,19 +63,16 @@ export default function FacilityLocationGuide({
           Rows with a light blue background match facilities in your recommendations.
         </Typography>
       )}
-      <Box
-        component="img"
-        src="/facilities-map.png"
-        alt="UCSB Recreation Center facilities map with numbered locations"
-        sx={{
-          width: "100%",
-          height: "auto",
-          display: "block",
-          borderRadius: 1,
-          border: 1,
-          borderColor: "divider",
-        }}
+      <FacilitiesMap
+        selectedMapNumber={selectedMapNumber}
+        onSelectMapNumber={setSelectedMapNumber}
       />
+      <Typography variant="body2" color="text.secondary">
+        Click a numbered circle on the map to see which facilities are at that location.
+      </Typography>
+      {selectedMapNumber !== null && (
+        <MapSelectionDetails mapNumber={selectedMapNumber} locations={selectedLocations} />
+      )}
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
         UCSB Recreation Center Facilities Map
       </Typography>
@@ -54,13 +90,13 @@ export default function FacilityLocationGuide({
         </a>
         .
       </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Click on a numbered location to see the facilities at that location. (To be implemented)
-      </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-        {FACILITY_LOCATIONS.map((entry) => {
+        {locationsByMapNumber.map((entry) => {
+          const activities = getActivitiesForLocation(entry);
           const highlighted =
             showHighlights && isFacilityLocationHighlighted(entry, highlightedFacilities);
+          const mapSelected =
+            selectedMapNumber !== null && entryMatchesMapNumber(entry, selectedMapNumber);
           return (
             <Box
               component="li"
@@ -71,7 +107,7 @@ export default function FacilityLocationGuide({
                 px: 1,
                 ml: -1,
                 borderRadius: 1,
-                ...(highlighted
+                ...(highlighted || mapSelected
                   ? {
                       bgcolor: (theme) =>
                         theme.palette.mode === "dark"
@@ -85,8 +121,11 @@ export default function FacilityLocationGuide({
                 <Box component="span" sx={{ fontWeight: 600 }}>
                   {entry.facilities}
                 </Box>{" "}
-                — {formatMapRef(entry.mapNumbers)}
+                — {formatMapRef(entry.mapNumbers, setSelectedMapNumber, selectedMapNumber)}
                 {entry.note !== undefined ? ` (${entry.note})` : ""}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                Available activities: {formatAvailableActivities(activities)}
               </Typography>
             </Box>
           );
