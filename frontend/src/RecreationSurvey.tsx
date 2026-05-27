@@ -568,9 +568,17 @@ export default function RecreationSurvey() {
       <Container maxWidth="lg">
         <FacilityGuideProvider recommendations={recommendations}>
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-              UCSB Recreation Recommender
-            </Typography>
+            <Box>
+              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
+                UCSB Recreation Recommender
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                Welcome to the UCSB Recreation Recommender. Tell us how you like to train in the
+                survey below and we&apos;ll recommend a weekly schedule for you to go to the gym for
+                your training. Once you are finished, click the get recommendations button to see
+                your personalized schedule.
+              </Typography>
+            </Box>
 
             <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "divider" }}>
               <Stack spacing={3}>
@@ -639,8 +647,8 @@ export default function RecreationSurvey() {
                     Enter your preferred facilities. See the <FacilityGuideLink /> section below for
                     help locating them on campus. Toggle the strict facility filter if you strictly
                     only want us to recommend your preferred facilities; otherwise we&apos;ll try to
-                    recommend your preferred facilities but will be flexible if they happen to be
-                    full. Note this may cause recommendations to be empty if we can&apos;t find
+                    recommend your preferred facilities but we&apos;ll be flexible if they happen to
+                    be full. Note this may cause recommendations to be empty if we can&apos;t find
                     facilities with your preferred activities when the strict facility filter is on.
                   </Typography>
                 </Box>
@@ -687,9 +695,9 @@ export default function RecreationSurvey() {
                   <Typography variant="body2" color="text.secondary">
                     Draw in your preferred hours to go to the gym and your unavailable hours in the
                     following weekly grid. Sign in with Google to import your calendar events for
-                    when you are busy, or draw your unavailable hours manually. We&apos;ll try to
+                    when you are busy, or fill in your unavailable hours. We&apos;ll try to
                     recommend times within your preferred hours, but we&apos;ll be flexible in case
-                    your preferred facilities happen to be full.
+                    your preferred facilities are full.
                   </Typography>
                 </Box>
 

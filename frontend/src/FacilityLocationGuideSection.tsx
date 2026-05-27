@@ -110,7 +110,7 @@ export default function FacilityLocationGuideSection() {
           id="facility-location-guide-header"
         >
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-            Facility location guide
+            Facility Location Guide
           </Typography>
         </AccordionSummary>
         <AccordionDetails sx={{ pt: 0 }}>

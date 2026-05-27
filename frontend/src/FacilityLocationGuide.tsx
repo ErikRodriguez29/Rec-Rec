@@ -38,10 +38,24 @@ export default function FacilityLocationGuide({
         }}
       />
       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-        UCSB Recreation Center facilities map
+        UCSB Recreation Center Facilities Map
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        Each option in preferred facilities corresponds to a numbered location on the map:
+        Each option in preferred facilities corresponds to a numbered location on the map
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        See the original map on the UCSB Recreation Center website{" "}
+        <a
+          href="https://recreation.ucsb.edu/facilities/livecount"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          here
+        </a>
+        .
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Click on a numbered location to see the facilities at that location. (To be implemented)
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
         {FACILITY_LOCATIONS.map((entry) => {
