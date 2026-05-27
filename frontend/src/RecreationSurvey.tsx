@@ -644,11 +644,7 @@ export default function RecreationSurvey() {
                   </Typography>
                   <Typography variant="body2" color="text.secondary" component="div">
                     Enter your preferred facilities. See the <FacilityGuideLink /> section below for
-                    help locating them on campus. Toggle the strict facility filter if you strictly
-                    only want us to recommend your preferred facilities; otherwise we&apos;ll try to
-                    recommend your preferred facilities but we&apos;ll be flexible if they happen to
-                    be full. Note this may cause recommendations to be empty if we can&apos;t find
-                    facilities with your preferred activities when the strict facility filter is on.
+                    help locating them on campus.
                   </Typography>
                 </Box>
 
@@ -666,6 +662,14 @@ export default function RecreationSurvey() {
                     />
                   )}
                 />
+
+                <Typography variant="body2" color="text.secondary" component="div">
+                  Enter &quot;Yes&quot; on the strict facility filter if you strictly only want us
+                  to recommend your preferred facilities; otherwise we&apos;ll try to recommend your
+                  preferred facilities but we&apos;ll be flexible if they happen to be full. Note
+                  this may cause recommendations to be empty if we can&apos;t find facilities with
+                  your preferred activities when the strict facility filter is on.
+                </Typography>
 
                 <FormControl fullWidth>
                   <InputLabel id="facilities-hard-filter-label">Strict facility filter</InputLabel>
