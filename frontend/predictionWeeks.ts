@@ -1,5 +1,7 @@
-/** Matches `get_current_next_week_numbers()` in src/scripts/recommender/data_preprocessing.py */
+/** Matches `get_week_info()` in `src/scripts/R/utils.R` and Python `get_current_next_week_numbers()`. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const DEFAULT_START_DATE = "2026-01-26";
 
 /** Monday 00:00 local time for the calendar week containing `date`. */
 export function mondayOf(date: Date): Date {
@@ -10,23 +12,47 @@ export function mondayOf(date: Date): Date {
   return d;
 }
 
-const ANCHOR_MONDAY = mondayOf(new Date(2026, 0, 16));
-
-export function getCurrentNextWeekNumbers(now = new Date()): {
-  currentWeek: number;
-  nextWeek: number;
-} {
-  const monday = mondayOf(now);
-  const daysSinceAnchor = Math.floor((monday.getTime() - ANCHOR_MONDAY.getTime()) / MS_PER_DAY);
-  const weekNo = Math.floor(daysSinceAnchor / 7) - 1;
-  return { currentWeek: weekNo, nextWeek: weekNo + 1 };
+function resolveStartDateString(startDateIso?: string): string {
+  if (startDateIso !== undefined && startDateIso.length > 0) {
+    return startDateIso;
+  }
+  const fromMeta = import.meta.env.START_DATE;
+  if (typeof fromMeta === "string" && fromMeta.length > 0) {
+    return fromMeta;
+  }
+  return DEFAULT_START_DATE;
 }
 
-/** Week folder index for `src/output/predictions/Week {n}/` heatmap PNGs (recommender week + 1). */
-export function getForecastHeatmapWeekNumbers(now = new Date()): {
+function parseStartDateLocal(isoDate: string): Date {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function week1MondayFromStartDate(startDateIso?: string): Date {
+  return mondayOf(parseStartDateLocal(resolveStartDateString(startDateIso)));
+}
+
+export function getCurrentNextWeekNumbers(
+  now = new Date(),
+  startDateIso?: string,
+): {
   currentWeek: number;
   nextWeek: number;
 } {
-  const weeks = getCurrentNextWeekNumbers(now);
-  return { currentWeek: weeks.currentWeek + 1, nextWeek: weeks.nextWeek + 1 };
+  const week1Monday = week1MondayFromStartDate(startDateIso);
+  const monday = mondayOf(now);
+  const daysSinceWeek1 = Math.floor((monday.getTime() - week1Monday.getTime()) / MS_PER_DAY);
+  const currentWeek = Math.floor(daysSinceWeek1 / 7) + 1;
+  return { currentWeek, nextWeek: currentWeek + 1 };
+}
+
+/** Week folder index for `src/output/predictions/Week {n}/` heatmap PNGs. */
+export function getForecastHeatmapWeekNumbers(
+  now = new Date(),
+  startDateIso?: string,
+): {
+  currentWeek: number;
+  nextWeek: number;
+} {
+  return getCurrentNextWeekNumbers(now, startDateIso);
 }

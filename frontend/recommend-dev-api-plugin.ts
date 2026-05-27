@@ -175,7 +175,7 @@ function attachDevApiMiddleware(
         sendJson(res, 405, { error: "Method not allowed" });
         return;
       }
-      sendJson(res, 200, getForecastHeatmapWeekNumbers());
+      sendJson(res, 200, getForecastHeatmapWeekNumbers(new Date(), process.env.START_DATE));
       return;
     }
 

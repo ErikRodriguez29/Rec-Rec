@@ -47,8 +47,12 @@ FACILITY_TYPE_LEVELS <- c(
 )
 
 
+default_start_date <- function() {
+  as.Date(Sys.getenv("START_DATE", unset = "2026-01-26"))
+}
+
 get_week_info <- function(
-  week1_start = as.Date("2026-01-26"),
+  week1_start = default_start_date(),
   today_date = Sys.Date()
 ) {
   current_monday <- today_date -

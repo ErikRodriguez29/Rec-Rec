@@ -22,6 +22,7 @@ export default defineConfig({
   /** Public OAuth client id only — never embed GOOGLE_CLIENT_SECRET in the browser. */
   define: {
     "import.meta.env.GOOGLE_CLIENT_ID": JSON.stringify(loadedEnv.GOOGLE_CLIENT_ID ?? ""),
+    "import.meta.env.START_DATE": JSON.stringify(loadedEnv.START_DATE ?? "2026-01-26"),
   },
   staged: {
     "*": "vp check --fix",
