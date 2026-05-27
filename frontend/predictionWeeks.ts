@@ -46,7 +46,10 @@ export function getCurrentNextWeekNumbers(
   return { currentWeek, nextWeek: currentWeek + 1 };
 }
 
-/** Week folder index for `src/output/predictions/Week {n}/` heatmap PNGs. */
+/**
+ * Week folder index for `src/output/predictions/Week {n}/` heatmap PNGs.
+ * Prediction outputs are stored one week ahead of recommender forecast CSV weeks.
+ */
 export function getForecastHeatmapWeekNumbers(
   now = new Date(),
   startDateIso?: string,
@@ -54,5 +57,6 @@ export function getForecastHeatmapWeekNumbers(
   currentWeek: number;
   nextWeek: number;
 } {
-  return getCurrentNextWeekNumbers(now, startDateIso);
+  const weeks = getCurrentNextWeekNumbers(now, startDateIso);
+  return { currentWeek: weeks.currentWeek + 1, nextWeek: weeks.nextWeek + 1 };
 }
