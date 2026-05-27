@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from constants import (
-    anchor_monday,
     current_week_load_path,
     next_week_load_path,
     predictions_week_path,
     use_hard_coded_load_paths,
+    week1_monday,
 )
 
 # Data preprocessing functions
@@ -16,8 +16,8 @@ from constants import (
 def get_current_next_week_numbers():
     today = datetime.now().date()
     monday = today - timedelta(days=today.weekday())
-    week_no = ((monday - anchor_monday).days // 7) - 1
-    return week_no, week_no + 1
+    current_week = (monday - week1_monday).days // 7 + 1
+    return current_week, current_week + 1
 
 
 # Split a specified column into a list of values (separated by "; ")

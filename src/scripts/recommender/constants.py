@@ -1,3 +1,4 @@
+import os
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -100,9 +101,9 @@ available_exercise_categories = [
     # Some facilities ("MAC Court", "Pool Deck", "Spa", "Climbing Center - MAC") use "NA" as a category which are excluded from the available exercise categories
 ]
 
-# Weeks start Monday; January 16, 2026 is in calendar week whose Monday is 2026-01-12.
-starting_date = date(2026, 1, 16)
-anchor_monday = starting_date - timedelta(days=starting_date.weekday())
+# Week 1 anchor: Monday on or before START_DATE (default 2026-01-26).
+START_DATE = date.fromisoformat(os.environ.get("START_DATE", "2026-01-26"))
+week1_monday = START_DATE - timedelta(days=START_DATE.weekday())
 
 # Convert the day of the week to a name
 day_to_name = {

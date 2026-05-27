@@ -16,6 +16,12 @@ Place your dataset on `facility_counts.csv` in the `src/data/` folder. A dataset
 ```bash
 python src/scripts/facility-counts.py
 ```
+
+### Set your start date
+Set your start date in your .env file to the earliest day in your dataset in YYYY-MM-DD format. Note this defaults to 2026-01-26 if no value is set.
+```.env
+START_DATE=YYYY-MM-DD
+```
 ### Forecast data generation
 
 From `src/scripts/`, install the required packages with `renv::restore()`, then run the following scripts in 
@@ -41,7 +47,7 @@ Generate predictions:
 Rscript src/scripts/R/Predictions.R
 ```
 
-**Outputs:** where n is the week number since the starting week from Janurary 26, 2026 (where the first week, n=1):
+**Outputs:** where n is the week number since the starting week from `START_DATE` (where the first week, n=1) (set this in your .env file):
 
 `EDA.R`:
 - `src/output/EDA/Week {n}/*.png`: heatmaps showing occupancy patterns in the Rec Cen
