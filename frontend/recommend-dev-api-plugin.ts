@@ -6,6 +6,7 @@ import { join } from "node:path";
 import process from "node:process";
 import type { Plugin, ViteDevServer } from "vite";
 
+import { parseRecommenderFailure } from "./src/recommendationErrors.ts";
 import { getForecastHeatmapWeekNumbers } from "./predictionWeeks.ts";
 
 export type RecommendRequestBody = {
@@ -256,17 +257,21 @@ function attachDevApiMiddleware(
 
     try {
       const { stdout, stderr, exitCode } = await runRecommend(scriptDir, scriptRelative, parsed);
-      const recommendations =
-        exitCode === 0 ? await readRecommendationsJson(recommendationsPath) : null;
+      const failure = parseRecommenderFailure(stdout, stderr);
+      const runSucceeded = exitCode === 0 && failure === null;
+      const recommendations = runSucceeded
+        ? await readRecommendationsJson(recommendationsPath)
+        : null;
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json");
       res.end(
         JSON.stringify({
-          ok: exitCode === 0,
+          ok: runSucceeded,
           exitCode,
           stdout,
           stderr,
           recommendations,
+          failure,
         }),
       );
     } catch (e) {

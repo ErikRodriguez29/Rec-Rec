@@ -32,7 +32,12 @@ import FacilityLocationGuideSection, {
 } from "./FacilityLocationGuideSection";
 import PredictionHeatmaps from "./PredictionHeatmaps";
 import RecommendationsDisplay from "./RecommendationsDisplay";
-import { isRecommendationsPayload, type RecommendationsPayload } from "./recommendationsTypes";
+import { parseRecommenderFailure } from "./recommendationErrors";
+import {
+  hasRecommendationContent,
+  isRecommendationsPayload,
+  type RecommendationsPayload,
+} from "./recommendationsTypes";
 
 const SCHEDULE_DAYS = [
   { code: "m", label: "Mon" },
@@ -124,25 +129,25 @@ function serializeScheduleSlots(slots: ReadonlySet<string>): string {
 }
 
 const PREFERRED_ACTIVITIES = [
-  "racquetball",
-  "squash",
-  "ellipticals (precor branded machines)",
-  "stairmasters (stair machines)",
-  "treadmills",
+  "arm & leg machines",
+  "arm machines",
+  "badminton",
   "basketball",
   "benching",
   "bike machines",
-  "weight lifting",
-  "badminton",
-  "arm machines",
-  "core machines",
-  "leg presses",
-  "arm & leg machines",
-  "weight crunch machines",
-  "hockey",
-  "skating",
-  "swimming",
   "climbing",
+  "core machines",
+  "ellipticals (precor branded machines)",
+  "hockey",
+  "leg presses",
+  "racquetball",
+  "skating",
+  "squash",
+  "stairmasters (stair machines)",
+  "swimming",
+  "treadmills",
+  "weight crunch machines",
+  "weight lifting",
 ] as const;
 
 const PREFERRED_FACILITIES = [
@@ -171,7 +176,7 @@ const PREFERRED_FACILITIES = [
   "Climbing Center - MAC",
 ] as const;
 
-const EXERCISE_CATEGORIES = ["cardio", "arms", "core", "legs", "weight training"] as const;
+const EXERCISE_CATEGORIES = ["arms", "cardio", "core", "legs", "weight training"] as const;
 
 type YesNo = "yes" | "no" | "";
 
@@ -530,16 +535,31 @@ export default function RecreationSurvey() {
         exitCode?: number | null;
         error?: string;
         recommendations?: unknown;
+        failure?: { userMessage?: string };
       };
+
+      const stdout = typeof data.stdout === "string" ? data.stdout : "";
+      const stderr = typeof data.stderr === "string" ? data.stderr : "";
+      const failure =
+        data.failure?.userMessage !== undefined && data.failure.userMessage.length > 0
+          ? { userMessage: data.failure.userMessage }
+          : parseRecommenderFailure(stdout, stderr);
 
       if (!res.ok) {
         setRecommendError(
-          "We couldn't generate your recommendations right now. Please try again in a moment.",
+          "Your recommendations couldn't be generated right now. Please try again later.",
         );
         return;
       }
 
+      if (failure !== null) {
+        setRecommendations(null);
+        setRecommendError(failure.userMessage);
+        return;
+      }
+
       if (!data.ok) {
+        setRecommendations(null);
         setRecommendError(
           "Something went wrong while building your schedule. Please review your preferences and try again.",
         );
@@ -547,8 +567,16 @@ export default function RecreationSurvey() {
       }
 
       if (isRecommendationsPayload(data.recommendations)) {
+        if (!hasRecommendationContent(data.recommendations)) {
+          setRecommendations(null);
+          setRecommendError(
+            "We couldn't generate a schedule with your current preferences. Review your activities, facilities, and filters, then try again.",
+          );
+          return;
+        }
         setRecommendations(data.recommendations);
       } else {
+        setRecommendations(null);
         setRecommendError(
           "Your schedule was processed, but we couldn't display the results. Please try again.",
         );
@@ -573,9 +601,8 @@ export default function RecreationSurvey() {
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                 Welcome to the UCSB Recreation Recommender. Tell us how you like to train in the
-                survey below and we&apos;ll recommend a weekly schedule for you to go to the gym for
-                your training. Once you are finished, click the get recommendations button to see
-                your personalized schedule.
+                survey below and we&apos;ll recommend a weekly schedule for you to go to the gym.
+                Once you are finished, click the get recommendations button to see your schedule.
               </Typography>
             </Box>
 

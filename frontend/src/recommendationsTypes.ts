@@ -54,6 +54,20 @@ export function isRecommendationsPayload(value: unknown): value is Recommendatio
   return isWeekRecommendations(root.current_week) && isWeekRecommendations(root.next_week);
 }
 
+function weekHasRecommendationContent(week: WeekRecommendations): boolean {
+  if (week.overall.length > 0) return true;
+  return week.by_category.some((category) =>
+    category.schedule.some((day) => day.options.length > 0),
+  );
+}
+
+export function hasRecommendationContent(payload: RecommendationsPayload): boolean {
+  return (
+    weekHasRecommendationContent(payload.current_week) ||
+    weekHasRecommendationContent(payload.next_week)
+  );
+}
+
 function isWeekRecommendations(value: unknown): value is WeekRecommendations {
   if (value === null || typeof value !== "object") return false;
   const week = value as Record<string, unknown>;
