@@ -85,7 +85,7 @@ In `src/scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use
 
 ### Frontend
 
-The frontend is a React app that is hosted on Vercel. It is located in the `frontend/` directory. It is built with Vite plus and TypeScript. It uses the `src/scripts/recommender/recommendations.json` file as input to display the recommendations.
+The frontend is located in the `frontend/` directory. It is built with Vite+ and TypeScript. It uses the `src/output/recommendations/recommendations.json` file as input to display the recommendations.
 
 To run the frontend, run the following from the `frontend/` directory:
 ```bash
