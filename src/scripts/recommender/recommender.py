@@ -77,8 +77,12 @@ def recommend_times(
     current_week_forecast = filter_outdoor_facilities(current_week_forecast)
     next_week_forecast = filter_outdoor_facilities(next_week_forecast)
     # Filter the current and next week forecasts to remove rows where it is raining if the user has a hard filter for rain
-    current_week_forecast = filter_rain(current_week_forecast, rain_filter)
-    next_week_forecast = filter_rain(next_week_forecast, rain_filter)
+    current_week_forecast = filter_rain(
+        current_week_forecast, rain_filter, week="current"
+    )
+    next_week_forecast = filter_rain(
+        next_week_forecast, rain_filter, week="next"
+    )
     # Augment the current and next week forecasts with the user's preferred hours
     current_week_forecast = augment_with_preferred_days_hours(
         current_week_forecast, preferred_days_hours
@@ -88,10 +92,10 @@ def recommend_times(
     )
     # Filter the current and next week forecasts to remove unavailable days and hours
     current_week_forecast = filter_unavailable_days_hours(
-        current_week_forecast, unavailable_days_hours
+        current_week_forecast, unavailable_days_hours, week="current"
     )
     next_week_forecast = filter_unavailable_days_hours(
-        next_week_forecast, unavailable_days_hours
+        next_week_forecast, unavailable_days_hours, week="next"
     )
     # Augment the current and next week forecasts with the user's preferred facilities
     current_week_forecast = augment_with_preferred_facilities(
@@ -102,15 +106,11 @@ def recommend_times(
     )
     # Filter the current and next week forecasts to remove facilities that are not preferred by the user if the user has a hard filter for preferred facilities
     current_week_forecast = filter_preferred_facilities(
-        current_week_forecast, preferred_facilities_hard_filter
+        current_week_forecast, preferred_facilities_hard_filter, week="current"
     )
     next_week_forecast = filter_preferred_facilities(
-        next_week_forecast, preferred_facilities_hard_filter
+        next_week_forecast, preferred_facilities_hard_filter, week="next"
     )
-
-    if current_week_forecast is None and next_week_forecast is None:
-        print("No recommendations found for either week!")
-        return None, None
 
     # print(f"Current week forecast: {current_week_forecast}")
     # print(f"Next week forecast: {next_week_forecast}")

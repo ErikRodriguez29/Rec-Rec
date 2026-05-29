@@ -110,7 +110,7 @@ def invoke_argparse():
         "--unavailable-days-hours",
         type=str,
         help='Enter the days and hours you are unavailable (semicolon separated) (day; hour range (min, max)) (example: "t; 10, 12; s; 9, 12" for Tuesday 10am - 12pm and Saturday 9am - 12pm)',
-        required=True,
+        required=False,
         default="None",
     )
     parser.add_argument(

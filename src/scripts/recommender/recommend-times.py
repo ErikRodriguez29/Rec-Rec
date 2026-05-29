@@ -35,9 +35,6 @@ def main():
         current_week_number,
         next_week_number,
     )
-    if current_week_recommendations is None or next_week_recommendations is None:
-        print("No recommendations found for current week or next week!")
-        return
     # Save the recommendations to CSV files
     if use_hard_coded_recommendations_save_paths:
         current_path = current_week_recommendations_save_path
