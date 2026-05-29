@@ -1,0 +1,63 @@
+/* FormPanel.css */
+
+.form-panel {
+  width: 50%;
+  height: 100%;
+
+  padding: 24px;
+
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+
+  box-sizing: border-box;
+}
+
+.form-title {
+  margin: 0 0 24px 0;
+
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+
+  padding: 14px;
+
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+
+  font-size: 16px;
+
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.form-button {
+  width: fit-content;
+
+  padding: 12px 20px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: black;
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 15px;
+  font-weight: 600;
+}
