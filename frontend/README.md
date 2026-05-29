@@ -71,4 +71,5 @@ export default defineConfig([
   },
 ]);
 ```
+
 # pstat-134-frontend

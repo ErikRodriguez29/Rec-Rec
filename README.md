@@ -83,6 +83,16 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 In `src/scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use_hard_coded_save_paths`, and/or `use_hard_coded_recommendations_save_paths` to `True` to pin inputs/outputs to specific paths paths instead of the calendar-derived current/next week.
 
+### Frontend
+
+The frontend is a React app that is hosted on Vercel. It is located in the `frontend/` directory. It is built with Vite plus and TypeScript. It uses the `src/scripts/recommender/recommendations.json` file as input to display the recommendations.
+
+To run the frontend, run the following from the `frontend/` directory:
+```bash
+pnpm install
+pnpm run dev
+```
+
 ## Project layout
 
 ```
