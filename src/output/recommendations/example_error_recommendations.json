@@ -1,0 +1,8 @@
+{
+    "ok": false,
+    "error": {
+      "code": "rain_hard_filter",
+      "message": "No recommendations found, reason: rain is a hard filter and there is no available time when not raining",
+      "week": "current"
+    }
+  }

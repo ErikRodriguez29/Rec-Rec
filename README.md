@@ -76,7 +76,7 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 - `src/output/recommendations/Week {n}/forecast_values_filtered.csv`: user filtered forecasted attendance (output to both forecasted weeks `src/output/recommendations/Week {n}/` and `src/output/recommendations/Week {n+1}/`) to be used for scoring
 - `src/output/recommendations/Week {n}/recommendations.csv`: per-week recommendation tables
-- `src/output/recommendations/recommendations.json`: JSON structured output for a frontend. See [`src/output/recommendations/example_recommendations.json`](src/output/recommendations/example_recommendations.json) for an example of the JSON structure.
+- `src/output/recommendations/recommendations.json`: JSON structured output for a frontend. See [`src/output/recommendations/example_recommendations.json`](src/output/recommendations/example_recommendations.json) for an example of the JSON structure. See [`src/output/recommendations/example_error_recommendations.json`](src/output/recommendations/example_error_recommendations.json) for an example of the JSON structure when an error occurs. All error messages that can occur are listed in [`src/scripts/recommender/filtering.py`](src/scripts/recommender/filtering.py).
 - `src/output/recommendations/recommendations.txt`: Text summary for debugging
 
 ### Testing with fixed weeks

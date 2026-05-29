@@ -144,6 +144,7 @@ def build_week_recommendations_json(df):
 # Format the current and next weeks recommendation JSON
 def build_recommendations_json(current_week_recommendations, next_week_recommendations):
     return {
+        "ok": True,
         "current_week": build_week_recommendations_json(current_week_recommendations),
         "next_week": build_week_recommendations_json(next_week_recommendations),
     }
