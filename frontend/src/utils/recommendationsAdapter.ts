@@ -37,7 +37,7 @@ interface BackendWeek {
   overall: BackendOverall[];
 }
 
-interface BackendJSON {
+export interface BackendJSON {
   current_week: BackendWeek;
   next_week: BackendWeek;
 }

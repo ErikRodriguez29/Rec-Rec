@@ -3,6 +3,7 @@ import { Box, Paper, Typography } from "@mui/material";
 import PreferencesForm from "./panels/PreferencesForm";
 import RecommendationsPanel from "./panels/RecommendationsPanel";
 import { mockRecommendations } from "../data/mockRecommendations";
+import { getRecommendations } from "../utils/getRecommendations";
 import { adaptRecommendations } from "../utils/recommendationsAdapter";
 import { DAY_CONFIGS } from "../constants";
 import { parseAmPmHour } from "../utils/icsParser";
@@ -63,9 +64,8 @@ const TwoPanelLayout = () => {
     setLoading(true);
     setRecommendations(null);
     try {
-      const res = await fetch("/recommendations.json");
-      const raw = await res.json();
-      setRecommendations(applyFilters(adaptRecommendations(raw), prefs));
+      const recommendations = await getRecommendations(prefs);
+      setRecommendations(applyFilters(adaptRecommendations(recommendations), prefs));
     } catch {
       setRecommendations(applyFilters(mockRecommendations, prefs));
     } finally {
