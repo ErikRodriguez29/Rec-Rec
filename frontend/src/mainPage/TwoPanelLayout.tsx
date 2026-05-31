@@ -64,6 +64,10 @@ const TwoPanelLayout = () => {
     setLoading(true);
     setRecommendations(null);
     try {
+      // Uncomment if using pre made recommendations
+      // const res = await fetch("/recommendations.json");
+      // const raw = await res.json()
+      // setRecommendations(applyFilters(adaptRecommendations(raw), prefs));
       const recommendations = await getRecommendations(prefs);
       setRecommendations(applyFilters(adaptRecommendations(recommendations), prefs));
     } catch {
