@@ -178,7 +178,7 @@ attendance_recipe_ts <- recipe(
 # Model setup
 
 # Tuning trees, learn_rate (the learning rate), and min_n
-library(bonsai)
+library(xgboost)
 boosted_model <- boost_tree(
   trees = tune(),
   learn_rate = tune(),
@@ -214,7 +214,7 @@ race_results <- model_set %>%
     resamples = ts_folds,
     grid = 8, # Number of candidate models to try per type
     control = race_ctrl,
-    metrics = metric_set(rmse, rsq)
+    metrics = metric_set(rmse)
   )
 
 # Results & Best Model
