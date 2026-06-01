@@ -4,7 +4,12 @@ library(lubridate)
 library(skimr)
 library(shadowtext)
 
-for (path in c("utils.R", file.path("scripts", "utils.R"))) {
+for (path in c(
+  "utils.R",
+  file.path("R", "utils.R"),
+  file.path("scripts", "R", "utils.R"),
+  file.path("src", "scripts", "R", "utils.R")
+)) {
   if (file.exists(path)) {
     source(path)
     break
@@ -18,17 +23,12 @@ for (path in c("utils.R", file.path("scripts", "utils.R"))) {
 week_number <- get_week_info()$current_week
 
 # Build directory path
-save_path <- file.path("..", "EDA", paste0("Week ", week_number))
-
-# Create directory if it doesn't exist
-if (!dir.exists(save_path)) {
-  dir.create(save_path, recursive = TRUE)
-}
+save_path <- ensure_output_dir("EDA", paste0("Week ", week_number))
 
 can_save <- TRUE
 
 
-attendance_raw <- read_csv("../data/facility_counts.csv", na = c("N/A"))
+attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
 attendance_cleaned <- na.omit(attendance_raw)
 attendance <- attendance_cleaned %>%
   mutate(
@@ -37,7 +37,8 @@ attendance <- attendance_cleaned %>%
     day_of_week = factor(day_of_week, levels = 0:6, labels = DAYS_OF_WEEK),
     facility_name = factor(facility_name)
   ) %>%
-  arrange(facility_name, timestamp)
+  arrange(facility_name, timestamp) %>%
+  filter_to_open_hours()
 skim(attendance)
 
 # 1 Average fullness of all Facilities
