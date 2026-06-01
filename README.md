@@ -5,7 +5,7 @@ The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation C
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
 2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R`,`Training.R`, `Predictions.R`).
 3. Recommends personalized weekly times to go to the gym that minimizes attendance while respecting user preferences, maximizing the chances of the user finding their preferred machines for their workout routines (`recommend-times.py`).
-4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (in progress).
+4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (`frontend/`).
 
 ## Instructions for Setup
 
