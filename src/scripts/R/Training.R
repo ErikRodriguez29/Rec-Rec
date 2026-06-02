@@ -137,16 +137,23 @@ attendance <- assign_facility_type(attendance)
 
 # Due to duplicate timestamps from many facilities being recorded at the same time,
 # we need to account for this by adding extra seconds per facility.
+# Every row in the same week shares week_start,
+# so each assess period includes the full facility-hour panel for that week.
 attendance <- attendance %>%
-  mutate(cv_time = timestamp + seconds(as.integer(facility_name) - 1L))
+  mutate(
+    week_start = floor_date(
+      as.Date(timestamp),
+      "week",
+      week_start = 1
+    )
+  )
 
-# Training/testing split/folds
-
+# Training/testing split/folds (assess = 1 period = one week_start value)
 attendance_split_ts <- attendance %>%
-  arrange(cv_time) %>%
+  arrange(week_start, facility_name, day_of_week, hour) %>%
   time_series_split(
-    date_var = cv_time,
-    assess = "1 week",
+    date_var = week_start,
+    assess = 1,
     cumulative = TRUE
   )
 
@@ -155,11 +162,11 @@ test_data_ts <- testing(attendance_split_ts)
 
 ts_folds <- time_series_cv(
   data = train_data_ts,
-  date_var = cv_time,
-  assess = "1 week", # each fold's assessment window
-  initial = "21 days", # minimum training window per fold
-  skip = "1 week",
-  slice_limit = 8, # number of folds
+  date_var = week_start,
+  assess = 1, # Each fold's assessment window in terms of weeks
+  initial = 3, # Minimum training window per fold in terms of weeks
+  skip = 1, # Gap between training and assessment windows in terms of weeks
+  slice_limit = 8, # Number of folds
   cumulative = TRUE
 )
 
