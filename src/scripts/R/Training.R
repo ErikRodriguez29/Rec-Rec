@@ -214,7 +214,7 @@ race_results <- model_set %>%
     resamples = ts_folds,
     grid = 8, # Number of candidate models to try per type
     control = race_ctrl,
-    metrics = metric_set(rmse)
+    metrics = metric_set(rmse, rsq)
   )
 
 # Results & Best Model
