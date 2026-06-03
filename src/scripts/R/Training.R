@@ -47,106 +47,8 @@ attendance_raw <- read_facility_counts("../../data/facility_counts.csv")
 
 days_of_week <- DAYS_OF_WEEK
 
-attendance <- attendance_raw %>%
-  parse_attendance_timestamps(days_of_week = days_of_week) %>%
-  mutate(is_raining = factor(is_raining))
-
-
-# Pre processing
-facility_capacities <- attendance_raw %>%
-  distinct(facility_name, total_capacity)
-
-attendance <- attendance %>%
-  mutate(facility_name = fct_drop(facility_name)) %>%
-  filter_to_open_hours()
-
-
-# 1. Create all combinations of hours, days, facilities
-all_combinations <- expand.grid(
-  facility_name = unique(attendance$facility_name),
-  day_of_week = factor(days_of_week),
-  hour = 0:23
-)
-
-# 2. Apply the open hour filter to all combinations
-combination_schedule <- all_combinations %>%
-  filter_to_open_hours() %>%
-  left_join(facility_capacities, by = "facility_name")
-
-# 3. Join the combination schedule to the attendance dataset
-attendance <- combination_schedule %>%
-  left_join(
-    # Removing percentage_filled so we can recalculate it later, total capacity to avoid conflicts
-    attendance %>% select(-percentage_filled, -total_capacity),
-    by = c("facility_name", "day_of_week", "hour")
-  ) %>%
-  # Refactor everything properly
-  mutate(
-    facility_name = factor(facility_name, levels = levels(attendance$facility_name)),
-    day_of_week = factor(day_of_week, levels = days_of_week)
-  )
-
-# Recalculate percentage_filled
-attendance <- attendance %>%
-  mutate(percentage_filled = (current_count / total_capacity) * 100)
-
-
-# Pre impute the missing current_count values with median imputation
-attendance <- attendance %>%
-  group_by(facility_name, day_of_week, hour) %>%
-  mutate(current_count = if_else(
-    is.na(current_count),
-    median(current_count, na.rm = TRUE),
-    current_count
-  )) %>%
-  ungroup() %>%
-  group_by(facility_name) %>%
-  mutate(current_count = if_else(
-    is.na(current_count),
-    median(current_count, na.rm = TRUE),
-    current_count
-  )) %>%
-  ungroup()
-
-
-# Time split pre processing
-
-# Get the Monday of the earliest observed week as an anchor
-anchor_date <- attendance %>%
-  filter(!is.na(timestamp)) %>%
-  summarize(min(floor_date(timestamp, "week", week_start = 1))) %>%
-  pull()
-
-# Fill NA timestamps with synthetic values built from anchor date + day + hour, with offset seconds per facility to prevent duplicate timestamps
-attendance <- attendance %>%
-  mutate(timestamp = if_else(
-    is.na(timestamp),
-    anchor_date +
-      days(match(day_of_week, days_of_week) - 1) +
-      hours(hour) +
-      seconds(as.integer(facility_name) - 1L),
-    timestamp
-  ))
-
-# Update the sorting to account for the synthetic timestamps
-attendance <- attendance %>%
-  arrange(timestamp)
-
-attendance <- add_panel_lag_features(attendance)
-attendance <- assign_facility_type(attendance)
-
-# Due to duplicate timestamps from many facilities being recorded at the same time,
-# we need to account for this by adding extra seconds per facility.
-# Every row in the same week shares week_start,
-# so each assess period includes the full facility-hour panel for that week.
-attendance <- attendance %>%
-  mutate(
-    week_start = floor_date(
-      as.Date(timestamp),
-      "week",
-      week_start = 1
-    )
-  )
+# Build the weekly training panel (one row per facility x day x hour x week)
+attendance <- build_weekly_training_panel(attendance_raw, days_of_week = days_of_week)
 
 # Training/testing split/folds (assess = 1 period = one week_start value)
 attendance_split_ts <- attendance %>%
@@ -211,6 +113,9 @@ race_ctrl <- control_race(
   save_workflow = FALSE,
   verbose = TRUE, # Show general progress
   verbose_elim = TRUE # Show which models are discarded during racing
+  # burn_in = 6, # Number of initial models to discard
+  # alpha = 0.10, # Significance level for early stopping
+  # num_ties = 15 # Number of models to consider as ties
 )
 
 # Run the racing search across all models in the set
@@ -235,12 +140,12 @@ best_results <- race_results %>%
   select_best(metric = "rmse")
 
 
-# 1. Rank models by RMSE and pull the ID of the #1 winner
+# Rank models by RMSE and pull the ID of the best model
 model_rankings <- rank_results(race_results, rank_metric = "rmse", select_best = TRUE)
 best_model_id <- model_rankings$wflow_id[1]
 best_model_type <- model_rankings$model[1]
 
-# 2. Extract the best parameters for the best model (hyperparameters only)
+# Extract the best parameters for the best model (hyperparameters only)
 best_params <- race_results %>%
   extract_workflow_set_result(best_model_id) %>%
   select_best(metric = "rmse")
@@ -255,7 +160,7 @@ cat("Best model parameters:\n")
 print(best_params)
 cat("CV RMSE of best model:", best_model_rmse, "\n")
 
-# 3. Finalize, Fit, and Save
+# Finalize, Fit, and Save
 final_wf_winner <- race_results %>%
   extract_workflow(best_model_id) %>%
   finalize_workflow(best_params)
