@@ -51,3 +51,8 @@ export interface RecommendationResult {
   currentWeek: WeekRecs;
   nextWeek: WeekRecs;
 }
+
+export interface RecommendationFailure {
+  code?: string;
+  userMessage: string;
+}

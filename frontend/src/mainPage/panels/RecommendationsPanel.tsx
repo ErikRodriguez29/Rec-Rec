@@ -3,6 +3,8 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
+  AlertTitle,
   Box,
   Card,
   CardContent,
@@ -21,7 +23,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import CalendarViewWeekIcon from "@mui/icons-material/CalendarViewWeek";
 import { CATEGORY_COLORS, DAY_COLORS, DAY_ORDER } from "../../constants";
-import type { OverallRec, RecommendationResult, WeekRecs } from "../../types";
+import type { OverallRec, RecommendationFailure, RecommendationResult, WeekRecs } from "../../types";
 import WeekCalendarView from "../components/WeekCalendarView";
 
 const getCategoryColor = (key: string) => CATEGORY_COLORS[key.toLowerCase()] ?? "#aa3bff";
@@ -210,11 +212,30 @@ const EmptyState = () => (
   </Box>
 );
 
+const ErrorState = ({ failure }: { failure: RecommendationFailure }) => (
+  <Box
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "100%",
+      px: 2,
+    }}
+  >
+    <Alert severity="warning" sx={{ maxWidth: 460 }}>
+      <AlertTitle sx={{ fontWeight: 700 }}>No recommendations found</AlertTitle>
+      {failure.userMessage}
+    </Alert>
+  </Box>
+);
+
 interface RecommendationsPanelProps {
   result: RecommendationResult | null;
+  error?: RecommendationFailure | null;
 }
 
-const RecommendationsPanel = ({ result }: RecommendationsPanelProps) => {
+const RecommendationsPanel = ({ result, error }: RecommendationsPanelProps) => {
   const [tab, setTab] = useState(0);
   const [calView, setCalView] = useState(true);
 
@@ -254,7 +275,9 @@ const RecommendationsPanel = ({ result }: RecommendationsPanelProps) => {
         )}
       </Box>
 
-      {result === null ? (
+      {error ? (
+        <ErrorState failure={error} />
+      ) : result === null ? (
         <EmptyState />
       ) : (
         <>

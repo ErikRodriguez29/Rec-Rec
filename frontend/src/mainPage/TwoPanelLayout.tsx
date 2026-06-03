@@ -2,76 +2,34 @@ import { useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import PreferencesForm from "./panels/PreferencesForm";
 import RecommendationsPanel from "./panels/RecommendationsPanel";
-import { mockRecommendations } from "../data/mockRecommendations";
-import { getRecommendations } from "../utils/getRecommendations";
+import { getRecommendations, RecommendationsFailedError } from "../utils/getRecommendations";
 import { adaptRecommendations } from "../utils/recommendationsAdapter";
-import { DAY_CONFIGS } from "../constants";
-import { parseAmPmHour } from "../utils/icsParser";
-import type { RecommendationResult, UserPreferences, WeekRecs } from "../types";
-
-// Map day codes ("M", "T"…) to full names ("Monday", "Tuesday"…)
-const DAY_CODE_TO_NAME = Object.fromEntries(DAY_CONFIGS.map(({ code, name }) => [code, name]));
-
-function applyFilters(result: RecommendationResult, prefs: UserPreferences): RecommendationResult {
-  const allowedFacilities =
-    prefs.preferredFacilitiesHardFilter && prefs.preferredFacilities.length > 0
-      ? new Set(prefs.preferredFacilities)
-      : null;
-
-  // Returns true if this day+time falls inside any unavailable block
-  const isUnavailable = (day: string, time: string): boolean =>
-    prefs.unavailableDaysHours.some((entry) => {
-      const hour = parseAmPmHour(time);
-      return (
-        DAY_CODE_TO_NAME[entry.day] === day && hour >= entry.startHour && hour <= entry.endHour
-      );
-    });
-
-  const filterWeek = (week: WeekRecs): WeekRecs => ({
-    overall: week.overall.filter(
-      (r) =>
-        (!allowedFacilities || allowedFacilities.has(r.facility)) && !isUnavailable(r.day, r.time),
-    ),
-    categories: week.categories
-      .map((cat) => ({
-        ...cat,
-        days: cat.days
-          .map((d) => ({
-            ...d,
-            facilities: d.facilities
-              .map((f) => ({
-                ...f,
-                times: f.times.filter((t) => !isUnavailable(d.day, t)),
-              }))
-              .filter(
-                (f) =>
-                  f.times.length > 0 && (!allowedFacilities || allowedFacilities.has(f.facility)),
-              ),
-          }))
-          .filter((d) => d.facilities.length > 0),
-      }))
-      .filter((cat) => cat.days.length > 0),
-  });
-
-  return { currentWeek: filterWeek(result.currentWeek), nextWeek: filterWeek(result.nextWeek) };
-}
+import {
+  GENERIC_RECOMMENDATION_FAILURE,
+  recommendationFailureFromCode,
+} from "../utils/recommendationErrors";
+import type { RecommendationFailure, RecommendationResult, UserPreferences } from "../types";
 
 const TwoPanelLayout = () => {
   const [recommendations, setRecommendations] = useState<RecommendationResult | null>(null);
+  const [error, setError] = useState<RecommendationFailure | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (prefs: UserPreferences) => {
     setLoading(true);
     setRecommendations(null);
+    setError(null);
     try {
-      // Uncomment if using pre made recommendations
-      // const res = await fetch("/recommendations.json");
-      // const raw = await res.json()
-      // setRecommendations(applyFilters(adaptRecommendations(raw), prefs));
-      const recommendations = await getRecommendations(prefs);
-      setRecommendations(applyFilters(adaptRecommendations(recommendations), prefs));
-    } catch {
-      setRecommendations(applyFilters(mockRecommendations, prefs));
+      // The recommender applies the facility / unavailable / rain filters server-side and returns
+      // either a schedule or a structured error, so we render its output directly.
+      const raw = await getRecommendations(prefs);
+      setRecommendations(adaptRecommendations(raw));
+    } catch (e) {
+      setError(
+        e instanceof RecommendationsFailedError
+          ? recommendationFailureFromCode(e.code, e.message)
+          : GENERIC_RECOMMENDATION_FAILURE,
+      );
     } finally {
       setLoading(false);
     }
@@ -149,7 +107,7 @@ const TwoPanelLayout = () => {
             boxSizing: "border-box",
           }}
         >
-          <RecommendationsPanel result={recommendations} />
+          <RecommendationsPanel result={recommendations} error={error} />
         </Paper>
       </Box>
     </Box>
