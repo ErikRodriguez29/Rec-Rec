@@ -113,9 +113,6 @@ race_ctrl <- control_race(
   save_workflow = FALSE,
   verbose = TRUE, # Show general progress
   verbose_elim = TRUE # Show which models are discarded during racing
-  # burn_in = 6, # Number of initial models to discard
-  # alpha = 0.10, # Significance level for early stopping
-  # num_ties = 15 # Number of models to consider as ties
 )
 
 # Run the racing search across all models in the set
