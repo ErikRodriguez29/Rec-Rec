@@ -8,7 +8,7 @@ const MESSAGES: Record<string, string> = {
   preferred_facilities_hard_filter:
     'No times matched. With "Only show selected facilities" on, every recommendation must be at one ' +
     "of your preferred facilities AND support at least one of your chosen activities or exercise " +
-    "categorie. None of your selections lined up. Try turning that filter off, picking more " +
+    "categories. None of your selections lined up. Try turning that filter off, picking more " +
     "facilities, or adjusting your activities and categories.",
   rain_hard_filter:
     "No times matched. With the rain filter on, every slot has to be dry, and the forecast left none " +
@@ -24,8 +24,7 @@ const FALLBACK_MESSAGE =
 
 /** Generic failure for transport problems (recommender unreachable, non-JSON, etc.). */
 export const GENERIC_RECOMMENDATION_FAILURE: RecommendationFailure = {
-  userMessage:
-    "We couldn't reach the recommender. Make sure it's running, then try again.",
+  userMessage: "We couldn't reach the recommender. Make sure it's running, then try again.",
 };
 
 /** Map a recommender error code (and its raw message) to a friendly failure for the UI. */
