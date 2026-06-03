@@ -163,7 +163,7 @@ add_weekly_lag_features <- function(df) {
     dplyr::mutate(
       lag_1w = dplyr::lag(current_count, 1L),
       roll_4w = slider::slide_dbl(
-        current_count,
+        lag(current_count, 1L),
         mean,
         .before = 3,
         .complete = TRUE
