@@ -58,6 +58,8 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
 
   const handleMouseDown = (slot: string) => {
     const currentState = latestRef.current.get(slot);
+    // Never draw over the opposite state — leave a cell holding the other color untouched.
+    if (currentState !== undefined && currentState !== mode) return;
     const removing = currentState === mode;
     dragRef.current = { active: true, removing, dragMode: mode };
     pendingRef.current = new Map(latestRef.current);
@@ -71,10 +73,16 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
 
   const handleMouseEnter = (slot: string) => {
     if (!dragRef.current.active) return;
-    if (dragRef.current.removing) {
+    const { removing, dragMode } = dragRef.current;
+    const currentState = pendingRef.current.get(slot);
+    if (removing) {
+      // Only erase cells of the color we started erasing.
+      if (currentState !== dragMode) return;
       pendingRef.current.delete(slot);
     } else {
-      pendingRef.current.set(slot, dragRef.current.dragMode);
+      // Only fill empty cells; never overwrite the opposite color.
+      if (currentState !== undefined) return;
+      pendingRef.current.set(slot, dragMode);
     }
     onChange(new Map(pendingRef.current));
   };
@@ -82,19 +90,23 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
   const getCellSx = (slot: string) => {
     const state = slots.get(slot);
     const fill = state ? SLOT_COLOR[state] : undefined;
+    // A cell holding the opposite color can't be drawn on in the current mode.
+    const locked = state !== undefined && state !== mode;
     const hoverFill = SLOT_COLOR[mode];
     return {
       bgcolor: fill ?? NEUTRAL_BG,
       border: "1px solid",
       borderColor: fill ?? NEUTRAL_BORDER,
       borderRadius: "3px",
-      cursor: "pointer",
+      cursor: locked ? "not-allowed" : "pointer",
       userSelect: "none" as const,
       transition: "background-color 60ms, border-color 60ms",
-      "&:hover": {
-        bgcolor: fill ? `${fill}cc` : `${hoverFill}33`,
-        borderColor: hoverFill,
-      },
+      "&:hover": locked
+        ? { bgcolor: fill }
+        : {
+            bgcolor: fill ? `${fill}cc` : `${hoverFill}33`,
+            borderColor: hoverFill,
+          },
     };
   };
 
