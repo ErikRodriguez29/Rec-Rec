@@ -156,94 +156,8 @@ assign_facility_type <- function(df) {
 }
 
 
-add_panel_lag_features <- function(df) {
+add_weekly_lag_features <- function(df) {
   df %>%
-    dplyr::arrange(facility_name, timestamp) %>%
-    dplyr::group_by(facility_name, day_of_week, hour) %>%
-    dplyr::mutate(
-      lag_1w = dplyr::lag(current_count, 1L),
-      roll_4w = slider::slide_dbl(
-        current_count,
-        mean,
-        .before = 3,
-        .complete = TRUE
-      )
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(facility_name, day_of_week, hour) %>%
-    dplyr::mutate(
-      lag_1w = dplyr::if_else(
-        is.na(lag_1w),
-        median(lag_1w, na.rm = TRUE),
-        lag_1w
-      ),
-      roll_4w = dplyr::if_else(
-        is.na(roll_4w),
-        median(roll_4w, na.rm = TRUE),
-        roll_4w
-      )
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(timestamp)
-}
-
-
-build_attendance_history <- function(
-  attendance_raw,
-  days_of_week = DAYS_OF_WEEK
-) {
-  observed <- attendance_raw %>%
-    parse_attendance_timestamps(days_of_week = days_of_week) %>%
-    filter_to_open_hours() %>%
-    dplyr::mutate(
-      week_start = lubridate::floor_date(
-        as.Date(timestamp),
-        "week",
-        week_start = 1
-      )
-    ) %>%
-    dplyr::group_by(facility_name, day_of_week, hour, week_start) %>%
-    dplyr::summarize(
-      current_count = median(current_count, na.rm = TRUE),
-      .groups = "drop"
-    )
-
-  slots <- expand.grid(
-    facility_name = unique(attendance_raw$facility_name),
-    day_of_week = factor(days_of_week),
-    hour = 0:23
-  ) %>%
-    filter_to_open_hours()
-
-  week_range <- seq(
-    min(observed$week_start),
-    max(observed$week_start),
-    by = "1 week"
-  )
-
-  tidyr::crossing(slots, week_start = week_range) %>%
-    dplyr::left_join(
-      observed,
-      by = c("facility_name", "day_of_week", "hour", "week_start")
-    ) %>%
-    dplyr::group_by(facility_name, day_of_week, hour) %>%
-    dplyr::mutate(
-      current_count = dplyr::if_else(
-        is.na(current_count),
-        median(current_count, na.rm = TRUE),
-        current_count
-      )
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(facility_name) %>%
-    dplyr::mutate(
-      current_count = dplyr::if_else(
-        is.na(current_count),
-        median(current_count, na.rm = TRUE),
-        current_count
-      )
-    ) %>%
-    dplyr::ungroup() %>%
     dplyr::arrange(facility_name, day_of_week, hour, week_start) %>%
     dplyr::group_by(facility_name, day_of_week, hour) %>%
     dplyr::mutate(
@@ -269,7 +183,144 @@ build_attendance_history <- function(
         roll_4w
       )
     ) %>%
+    dplyr::ungroup()
+}
+
+
+impute_weekly_slot_counts <- function(panel) {
+  panel %>%
+    dplyr::group_by(facility_name, day_of_week, hour) %>%
+    dplyr::mutate(
+      current_count = dplyr::if_else(
+        is.na(current_count),
+        median(current_count, na.rm = TRUE),
+        current_count
+      )
+    ) %>%
     dplyr::ungroup() %>%
+    dplyr::group_by(facility_name) %>%
+    dplyr::mutate(
+      current_count = dplyr::if_else(
+        is.na(current_count),
+        median(current_count, na.rm = TRUE),
+        current_count
+      )
+    ) %>%
+    dplyr::ungroup()
+}
+
+
+impute_weekly_slot_weather <- function(panel) {
+  panel %>%
+    dplyr::group_by(facility_name, day_of_week, hour) %>%
+    dplyr::mutate(
+      is_raining = dplyr::if_else(
+        is.na(is_raining),
+        any(is_raining, na.rm = TRUE),
+        is_raining
+      )
+    ) %>%
+    dplyr::ungroup()
+}
+
+
+build_weekly_slot_panel <- function(
+  attendance_raw,
+  days_of_week = DAYS_OF_WEEK,
+  include_weather = FALSE
+) {
+  parsed <- attendance_raw %>%
+    parse_attendance_timestamps(days_of_week = days_of_week) %>%
+    filter_to_open_hours() %>%
+    dplyr::mutate(
+      week_start = lubridate::floor_date(
+        as.Date(timestamp),
+        "week",
+        week_start = 1
+      )
+    )
+
+  observed <- if (include_weather) {
+    parsed %>%
+      dplyr::group_by(facility_name, day_of_week, hour, week_start) %>%
+      dplyr::summarize(
+        current_count = median(current_count, na.rm = TRUE),
+        is_raining = any(is_raining, na.rm = TRUE),
+        .groups = "drop"
+      )
+  } else {
+    parsed %>%
+      dplyr::group_by(facility_name, day_of_week, hour, week_start) %>%
+      dplyr::summarize(
+        current_count = median(current_count, na.rm = TRUE),
+        .groups = "drop"
+      )
+  }
+
+  slots <- expand.grid(
+    facility_name = unique(attendance_raw$facility_name),
+    day_of_week = factor(days_of_week, levels = days_of_week),
+    hour = 0:23
+  ) %>%
+    filter_to_open_hours()
+
+  week_range <- seq(
+    min(observed$week_start),
+    max(observed$week_start),
+    by = "1 week"
+  )
+
+  panel <- tidyr::crossing(slots, week_start = week_range) %>%
+    dplyr::left_join(
+      observed,
+      by = c("facility_name", "day_of_week", "hour", "week_start")
+    ) %>%
+    impute_weekly_slot_counts()
+
+  if (include_weather) {
+    panel <- impute_weekly_slot_weather(panel)
+  }
+
+  panel
+}
+
+
+build_weekly_training_panel <- function(
+  attendance_raw,
+  days_of_week = DAYS_OF_WEEK
+) {
+  facility_capacities <- attendance_raw %>%
+    dplyr::distinct(facility_name, total_capacity)
+
+  panel <- build_weekly_slot_panel(
+    attendance_raw,
+    days_of_week = days_of_week,
+    include_weather = TRUE
+  ) %>%
+    add_weekly_lag_features() %>%
+    dplyr::left_join(facility_capacities, by = "facility_name") %>%
+    dplyr::mutate(
+      percentage_filled = (current_count / total_capacity) * 100,
+      is_raining = factor(is_raining),
+      facility_name = factor(facility_name),
+      day_of_week = factor(day_of_week, levels = days_of_week)
+    ) %>%
+    assign_facility_type()
+
+  panel
+}
+
+
+build_attendance_history <- function(
+  attendance_raw,
+  days_of_week = DAYS_OF_WEEK
+) {
+  build_weekly_slot_panel(
+    attendance_raw,
+    days_of_week = days_of_week,
+    include_weather = FALSE
+  ) %>%
+    add_weekly_lag_features() %>%
     dplyr::mutate(
       timestamp = lubridate::as_datetime(week_start) +
         lubridate::days(match(day_of_week, days_of_week) - 1) +
