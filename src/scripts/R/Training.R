@@ -50,6 +50,10 @@ days_of_week <- DAYS_OF_WEEK
 # Build the weekly training panel (one row per facility x day x hour x week)
 attendance <- build_weekly_training_panel(attendance_raw, days_of_week = days_of_week)
 
+# Drop the last partial week of data since it is not complete
+attendance <- attendance %>%
+  filter(week_start < max(attendance$week_start))
+
 # Training/testing split/folds (assess = 1 period = one week_start value)
 attendance_split_ts <- attendance %>%
   arrange(week_start, facility_name, day_of_week, hour) %>%
@@ -68,7 +72,7 @@ ts_folds <- time_series_cv(
   assess = 1, # Each fold's assessment window in terms of weeks
   initial = 3, # Minimum training window per fold in terms of weeks
   skip = 1, # Gap between training and assessment windows in terms of weeks
-  slice_limit = 8, # Number of folds
+  slice_limit = 10, # Number of folds
   cumulative = TRUE
 )
 
