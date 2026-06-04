@@ -1,7 +1,28 @@
 import type { DayCode } from "../types";
 
-const GOOGLE_CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
-const GOOGLE_CALENDAR_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const GOOGLE_CALENDAR_ACCESS_SCOPE =
+  "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar";
+
+const GOOGLE_CALENDAR_TOKEN_KEY = "rec-rec-google-calendar-token";
+export const GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT = "rec-rec-google-calendar-token-change";
+
+export function getGoogleCalendarAccessToken(): string | null {
+  return sessionStorage.getItem(GOOGLE_CALENDAR_TOKEN_KEY);
+}
+
+export function isGoogleCalendarLinked(): boolean {
+  return getGoogleCalendarAccessToken() !== null;
+}
+
+export function clearGoogleCalendarLink(): void {
+  sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);
+  window.dispatchEvent(new Event(GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT));
+}
+
+function persistGoogleCalendarAccessToken(token: string): void {
+  sessionStorage.setItem(GOOGLE_CALENDAR_TOKEN_KEY, token);
+  window.dispatchEvent(new Event(GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT));
+}
 
 declare global {
   interface Window {
@@ -12,6 +33,7 @@ declare global {
             client_id: string;
             scope: string;
             callback: (response: { access_token?: string; error?: string }) => void;
+            error_callback?: (error: { type?: string }) => void;
           }) => {
             requestAccessToken: () => void;
           };
@@ -19,6 +41,22 @@ declare global {
       };
     };
   }
+}
+
+function googleLinkErrorMessage(error?: string | { type?: string }): string {
+  const code = typeof error === "string" ? error : error?.type;
+
+  if (code === "access_denied" || code === "popup_closed_by_user" || code === "popup_closed") {
+    return "Google Calendar sign-in was cancelled.";
+  }
+
+  if (code === "popup_failed_to_open") {
+    return "Could not open Google sign-in. Check your popup blocker.";
+  }
+
+  if (typeof error === "string" && error) return error;
+
+  return "Could not link Google Calendar.";
 }
 
 function dayToCode(date: Date): DayCode {
@@ -38,16 +76,29 @@ function requestGoogleCalendarTokenWithScope(scope: string): Promise<string> {
   }
 
   return new Promise((resolve, reject) => {
+    let settled = false;
+
+    const finish = (action: () => void) => {
+      if (settled) return;
+      settled = true;
+      action();
+    };
+
     const tokenClient = window.google!.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope,
       callback: (response) => {
-        if (response.error || !response.access_token) {
-          reject(new Error(response.error || "Could not link Google Calendar."));
+        const accessToken = response.access_token;
+
+        if (response.error || !accessToken) {
+          finish(() => reject(new Error(googleLinkErrorMessage(response.error))));
           return;
         }
 
-        resolve(response.access_token);
+        finish(() => resolve(accessToken));
+      },
+      error_callback: (error) => {
+        finish(() => reject(new Error(googleLinkErrorMessage(error))));
       },
     });
 
@@ -55,12 +106,20 @@ function requestGoogleCalendarTokenWithScope(scope: string): Promise<string> {
   });
 }
 
-export function requestGoogleCalendarToken(): Promise<string> {
-  return requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_READONLY_SCOPE);
+export async function linkGoogleCalendar(): Promise<string> {
+  const token = await requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_ACCESS_SCOPE);
+  persistGoogleCalendarAccessToken(token);
+  return token;
 }
 
-export function requestGoogleCalendarWriteToken(): Promise<string> {
-  return requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_EVENTS_SCOPE);
+export function requireGoogleCalendarAccessToken(): string {
+  const token = getGoogleCalendarAccessToken();
+
+  if (!token) {
+    throw new Error("Link Google Calendar first.");
+  }
+
+  return token;
 }
 
 export type GoogleCalendarExportEvent = {
@@ -204,15 +263,16 @@ type CalendarListEntry = {
   summary?: string;
 };
 
-async function fetchReadableCalendarListPages(
+async function fetchCalendarListPages(
   accessToken: string,
+  minAccessRole: "reader" | "writer",
 ): Promise<GoogleCalendarSummary[]> {
   const calendars: GoogleCalendarSummary[] = [];
   let pageToken: string | undefined;
   let done = false;
 
   const base = new URL("https://www.googleapis.com/calendar/v3/users/me/calendarList");
-  base.searchParams.set("minAccessRole", "reader");
+  base.searchParams.set("minAccessRole", minAccessRole);
   base.searchParams.set("maxResults", "250");
 
   while (!done) {
@@ -264,7 +324,45 @@ async function fetchReadableCalendarListPages(
 export async function fetchReadableCalendarList(
   accessToken: string,
 ): Promise<GoogleCalendarSummary[]> {
-  return fetchReadableCalendarListPages(accessToken);
+  return fetchCalendarListPages(accessToken, "reader");
+}
+
+export async function fetchWritableCalendarList(
+  accessToken: string,
+): Promise<GoogleCalendarSummary[]> {
+  return fetchCalendarListPages(accessToken, "writer");
+}
+
+export async function createGoogleCalendar(
+  accessToken: string,
+  summary: string,
+): Promise<GoogleCalendarSummary> {
+  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ summary }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not create Google Calendar.");
+  }
+
+  const data = (await response.json()) as { id?: string; summary?: string };
+
+  if (typeof data.id !== "string") {
+    throw new Error("Could not create Google Calendar.");
+  }
+
+  return {
+    id: data.id,
+    summary:
+      typeof data.summary === "string" && data.summary.trim().length > 0
+        ? data.summary.trim()
+        : summary,
+  };
 }
 
 async function fetchPickableEventsOneCalendar(params: {

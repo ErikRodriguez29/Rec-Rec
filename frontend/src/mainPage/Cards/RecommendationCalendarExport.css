@@ -45,19 +45,121 @@
   gap: 10px;
 }
 
-.calendar-export-message {
-  color: #475569;
-  font-size: 0.84rem;
-  margin: 0;
-  max-width: 360px;
-  text-align: right;
-}
-
 .calendar-export-groups {
   align-items: flex-end;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.google-calendar-target {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.google-calendar-target-label {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.calendar-link-button {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #285c70;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 9px 12px;
+  width: 100%;
+}
+
+.calendar-link-button:hover:not(:disabled) {
+  background: #f2f7f8;
+  border-color: #9fbac3;
+}
+
+.calendar-link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.calendar-link-button--compact {
+  align-self: flex-end;
+  font-size: 0.74rem;
+  padding: 4px 8px;
+  width: auto;
+}
+
+.calendar-link-status,
+.calendar-link-error {
+  font-size: 0.84rem;
+  margin: 0;
+  text-align: right;
+  width: 100%;
+}
+
+.calendar-link-status {
+  color: #166534;
+  font-weight: 600;
+}
+
+.calendar-link-error {
+  color: #b45309;
+}
+
+.google-calendar-target-select {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  color: #334155;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.google-calendar-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.google-calendar-create-input {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  color: #334155;
+  flex: 1 1 160px;
+  font: inherit;
+  font-size: 0.88rem;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.calendar-export-text-button {
+  background: none;
+  border: 0;
+  color: #285c70;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.calendar-export-text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.calendar-export-text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .calendar-export-group {
@@ -354,12 +456,14 @@
     width: 100%;
   }
 
+  .google-calendar-target,
   .calendar-export-group {
+    max-width: none;
     width: 100%;
   }
 
-  .calendar-export-message {
-    max-width: none;
+  .calendar-link-status,
+  .calendar-link-error {
     text-align: left;
   }
 

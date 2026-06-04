@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Calendar, dateFnsLocalizer, type Event as CalendarEvent } from "react-big-calendar";
 import { createEvents, type EventAttributes } from "ics";
 import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import type { RecommendationResult, WeekRecs } from "../../types";
 import {
+  createGoogleCalendar,
+  fetchWritableCalendarList,
+  getGoogleCalendarAccessToken,
   insertGoogleCalendarEvents,
-  requestGoogleCalendarWriteToken,
+  requireGoogleCalendarAccessToken,
+  type GoogleCalendarSummary,
 } from "../../api/googleCalendar";
+import { useGoogleCalendarLink } from "../../useGoogleCalendarLink";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./RecommendationCalendarExport.css";
 
@@ -295,9 +300,50 @@ const RecommendationCalendarExport = ({
   const [icsMenuOpen, setIcsMenuOpen] = useState(false);
   const [googleMenuOpen, setGoogleMenuOpen] = useState(false);
   const [googleExporting, setGoogleExporting] = useState(false);
-  const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [googleExportSuccess, setGoogleExportSuccess] = useState<string | null>(null);
+  const [googleCalendars, setGoogleCalendars] = useState<GoogleCalendarSummary[]>([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState("primary");
+  const [loadingCalendars, setLoadingCalendars] = useState(false);
+  const [creatingCalendar, setCreatingCalendar] = useState(false);
+  const [showNewCalendar, setShowNewCalendar] = useState(false);
+  const [newCalendarName, setNewCalendarName] = useState("");
+  const {
+    linked: googleLinked,
+    loading: linkingGoogle,
+    error: calendarError,
+    link: linkGoogleCalendar,
+    setError: setCalendarError,
+  } = useGoogleCalendarLink();
   const icsMenuRef = useRef<HTMLDivElement>(null);
   const googleMenuRef = useRef<HTMLDivElement>(null);
+
+  const loadGoogleCalendars = useCallback(async () => {
+    const token = getGoogleCalendarAccessToken();
+    if (!token) return;
+
+    setLoadingCalendars(true);
+
+    try {
+      const list = await fetchWritableCalendarList(token);
+      setGoogleCalendars(list);
+
+      setSelectedCalendarId((current) => {
+        if (list.some((calendar) => calendar.id === current)) return current;
+        if (list.some((calendar) => calendar.id === "primary")) return "primary";
+        return list[0]?.id ?? "primary";
+      });
+    } catch (error) {
+      setCalendarError(error instanceof Error ? error.message : "Could not load Google calendars.");
+    } finally {
+      setLoadingCalendars(false);
+    }
+  }, [setCalendarError]);
+
+  useEffect(() => {
+    if (!googleLinked) return;
+
+    void loadGoogleCalendars();
+  }, [googleLinked, loadGoogleCalendars]);
 
   useEffect(() => {
     if (!icsMenuOpen) return;
@@ -346,8 +392,6 @@ const RecommendationCalendarExport = ({
   const googleEvents = useMemo(() => buildExportEvents(result, googleScope), [result, googleScope]);
 
   const handleDownloadIcs = () => {
-    setExportMessage(null);
-
     const events: EventAttributes[] = icsEvents.map((event) => ({
       title: event.title,
       description: `${event.resource.activity} at ${event.resource.facility}`,
@@ -374,14 +418,55 @@ const RecommendationCalendarExport = ({
     downloadTextFile(`${safeName || "recommendations"}-${scopeLabel}.ics`, value);
   };
 
-  const handleAddToGoogleCalendar = async () => {
-    if (googleExporting || googleEvents.length === 0) return;
+  const handleLinkGoogleCalendar = () => {
+    setGoogleExportSuccess(null);
+    void linkGoogleCalendar();
+  };
 
-    setGoogleExporting(true);
-    setExportMessage(null);
+  const handleCreateCalendar = async () => {
+    const summary = newCalendarName.trim();
+    if (!summary || creatingCalendar) return;
+
+    setCreatingCalendar(true);
+    setGoogleExportSuccess(null);
+    setCalendarError(null);
 
     try {
-      const token = await requestGoogleCalendarWriteToken();
+      const token = requireGoogleCalendarAccessToken();
+      const created = await createGoogleCalendar(token, summary);
+      setGoogleCalendars((current) => [...current, created]);
+      setSelectedCalendarId(created.id);
+      setNewCalendarName("");
+      setShowNewCalendar(false);
+    } catch (error) {
+      setCalendarError(
+        error instanceof Error ? error.message : "Could not create Google Calendar.",
+      );
+    } finally {
+      setCreatingCalendar(false);
+    }
+  };
+
+  const handleAddToGoogleCalendar = async () => {
+    if (googleExporting || googleEvents.length === 0 || !googleLinked) return;
+
+    setGoogleExporting(true);
+    setGoogleExportSuccess(null);
+    setCalendarError(null);
+
+    try {
+      const token = requireGoogleCalendarAccessToken();
+
+      let calendars = googleCalendars;
+
+      if (calendars.length === 0) {
+        calendars = await fetchWritableCalendarList(token);
+        setGoogleCalendars(calendars);
+      }
+
+      const calendarId =
+        calendars.find((calendar) => calendar.id === selectedCalendarId)?.id ?? selectedCalendarId;
+
       const created = await insertGoogleCalendarEvents(
         token,
         googleEvents.map((event) => ({
@@ -391,11 +476,17 @@ const RecommendationCalendarExport = ({
           start: event.start,
           end: event.end,
         })),
+        calendarId,
       );
 
-      setExportMessage(`Added ${created} event${created === 1 ? "" : "s"} to Google Calendar.`);
+      const calendarLabel =
+        calendars.find((calendar) => calendar.id === calendarId)?.summary ?? "Google Calendar";
+
+      setGoogleExportSuccess(
+        `Successfully added ${created} event${created === 1 ? "" : "s"} to ${calendarLabel}.`,
+      );
     } catch (error) {
-      setExportMessage(
+      setCalendarError(
         error instanceof Error ? error.message : "Could not add events to Google Calendar.",
       );
     } finally {
@@ -418,21 +509,102 @@ const RecommendationCalendarExport = ({
 
         <div className="calendar-export-actions">
           <div className="calendar-export-groups">
-            <ExportButtonGroup
-              actionLabel="Add to Google Calendar"
-              disabled={googleEvents.length === 0}
-              loading={googleExporting}
-              menuOpen={googleMenuOpen}
-              menuRef={googleMenuRef}
-              scope={googleScope}
-              tone="google"
-              onAction={() => void handleAddToGoogleCalendar()}
-              onScopeChange={(scope) => {
-                setGoogleScope(scope);
-                setGoogleMenuOpen(false);
-              }}
-              onToggleMenu={() => setGoogleMenuOpen((open) => !open)}
-            />
+            <div className="google-calendar-target">
+              <label className="google-calendar-target-label" htmlFor="google-export-calendar">
+                Export to
+              </label>
+
+              {!googleLinked ? (
+                <button
+                  className="calendar-link-button"
+                  disabled={linkingGoogle || loadingCalendars}
+                  type="button"
+                  onClick={handleLinkGoogleCalendar}
+                >
+                  {linkingGoogle || loadingCalendars ? "Connecting..." : "Link Google Calendar"}
+                </button>
+              ) : (
+                <>
+                  <select
+                    className="google-calendar-target-select"
+                    disabled={loadingCalendars || creatingCalendar}
+                    id="google-export-calendar"
+                    value={selectedCalendarId}
+                    onChange={(event) => setSelectedCalendarId(event.target.value)}
+                  >
+                    {loadingCalendars && googleCalendars.length === 0 ? (
+                      <option value="primary">Loading calendars...</option>
+                    ) : (
+                      googleCalendars.map((calendar) => (
+                        <option key={calendar.id} value={calendar.id}>
+                          {calendar.summary}
+                        </option>
+                      ))
+                    )}
+                  </select>
+
+                  {!showNewCalendar ? (
+                    <button
+                      className="calendar-link-button calendar-link-button--compact"
+                      type="button"
+                      onClick={() => setShowNewCalendar(true)}
+                    >
+                      Create new calendar
+                    </button>
+                  ) : (
+                    <div className="google-calendar-create">
+                      <input
+                        className="google-calendar-create-input"
+                        placeholder="New calendar name"
+                        type="text"
+                        value={newCalendarName}
+                        onChange={(event) => setNewCalendarName(event.target.value)}
+                      />
+                      <button
+                        className="calendar-export-text-button"
+                        disabled={creatingCalendar || newCalendarName.trim().length === 0}
+                        type="button"
+                        onClick={() => void handleCreateCalendar()}
+                      >
+                        {creatingCalendar ? "Creating..." : "Create"}
+                      </button>
+                      <button
+                        className="calendar-export-text-button"
+                        type="button"
+                        onClick={() => {
+                          setShowNewCalendar(false);
+                          setNewCalendarName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {googleLinked && (
+                <ExportButtonGroup
+                  actionLabel="Add to Google Calendar"
+                  disabled={googleEvents.length === 0}
+                  loading={googleExporting}
+                  menuOpen={googleMenuOpen}
+                  menuRef={googleMenuRef}
+                  scope={googleScope}
+                  tone="google"
+                  onAction={() => void handleAddToGoogleCalendar()}
+                  onScopeChange={(scope) => {
+                    setGoogleScope(scope);
+                    setGoogleMenuOpen(false);
+                  }}
+                  onToggleMenu={() => setGoogleMenuOpen((open) => !open)}
+                />
+              )}
+
+              {googleExportSuccess && <p className="calendar-link-status">{googleExportSuccess}</p>}
+
+              {calendarError && <p className="calendar-link-error">{calendarError}</p>}
+            </div>
 
             <ExportButtonGroup
               actionLabel="Download .ics"
@@ -449,8 +621,6 @@ const RecommendationCalendarExport = ({
               onToggleMenu={() => setIcsMenuOpen((open) => !open)}
             />
           </div>
-
-          {exportMessage && <p className="calendar-export-message">{exportMessage}</p>}
         </div>
       </div>
 

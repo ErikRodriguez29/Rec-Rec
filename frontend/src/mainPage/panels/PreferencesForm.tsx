@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Autocomplete, TextField } from "@mui/material";
 import { ACTIVITIES, DAY_CONFIGS, EXERCISE_CATEGORIES, FACILITIES } from "../../constants";
 import type { DayCode, DayHourEntry, SlotState, UserPreferences } from "../../types";
-import { requestGoogleCalendarToken } from "../../api/googleCalendar";
+import { useGoogleCalendarLink } from "../../useGoogleCalendarLink";
 import GoogleCalendarEventImporter from "../components/GoogleCalendarEventImporter";
 import TimeGrid from "../components/TimeGrid";
 import "./PreferencesForm.css";
@@ -65,9 +65,14 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
   const [slotMap, setSlotMap] = useState<Map<string, SlotState>>(new Map());
   const [rainFilter, setRainFilter] = useState(false);
   const [facilitiesHardFilter, setFacilitiesHardFilter] = useState(false);
-  const [calendarLoading, setCalendarLoading] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [calendarError, setCalendarError] = useState("");
+  const {
+    linked: googleLinked,
+    accessToken,
+    loading: calendarLoading,
+    error: calendarError,
+    link: linkGoogleCalendar,
+    disconnect: disconnectGoogleCalendar,
+  } = useGoogleCalendarLink();
 
   const preferredSlots = filterSlots(slotMap, "preferred");
   const unavailableSlots = filterSlots(slotMap, "unavailable");
@@ -84,25 +89,8 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
     preferredFacilitiesHardFilter: facilitiesHardFilter,
   };
 
-  const handleLinkGoogleCalendar = async () => {
-    if (calendarLoading) return;
-
-    setCalendarLoading(true);
-    setCalendarError("");
-
-    try {
-      const token = await requestGoogleCalendarToken();
-      setAccessToken(token);
-    } catch (error) {
-      setCalendarError(error instanceof Error ? error.message : "Could not link Google Calendar.");
-    } finally {
-      setCalendarLoading(false);
-    }
-  };
-
-  const disconnectGoogleCalendar = () => {
-    setAccessToken(null);
-    setCalendarError("");
+  const handleLinkGoogleCalendar = () => {
+    void linkGoogleCalendar();
   };
 
   const mergeUnavailableSlots = (keys: ReadonlySet<string>) => {
@@ -163,12 +151,12 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
           >
             {calendarLoading
               ? "Reading Google Calendar..."
-              : accessToken
+              : googleLinked
                 ? "Refresh Google Calendar"
                 : "Link Google Calendar"}
           </button>
 
-          {accessToken && (
+          {googleLinked && (
             <button
               className="calendar-clear-button"
               type="button"
