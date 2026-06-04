@@ -38,19 +38,41 @@
   line-height: 1.45;
 }
 
-.ics-download-button {
-  border: none;
-  border-radius: 10px;
-  padding: 11px 18px;
+.ics-download-group {
+  display: inline-flex;
+  position: relative;
+}
+
+.ics-download-button,
+.ics-download-menu-button {
   background: #111827;
+  border: none;
   color: #ffffff;
   cursor: pointer;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.ics-download-button {
+  border-radius: 10px 0 0 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 11px 18px;
   white-space: nowrap;
 }
 
+.ics-download-menu-button {
+  align-items: center;
+  border-radius: 0 10px 10px 0;
+  display: flex;
+  font-size: 0.95rem;
+  justify-content: center;
+  line-height: 1;
+  min-width: 42px;
+  padding: 11px 12px;
+}
+
+.ics-download-menu-button:hover,
 .ics-download-button:hover:not(:disabled) {
   background: #020617;
 }
@@ -58,6 +80,43 @@
 .ics-download-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.ics-download-menu {
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 2;
+}
+
+.ics-download-menu button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.ics-download-menu button:hover {
+  background: #f8fafc;
+}
+
+.ics-download-menu button.active {
+  background: #eef6f8;
+  color: #111827;
 }
 
 .recommendation-calendar-shell {
@@ -250,8 +309,12 @@
     flex-direction: column;
   }
 
-  .ics-download-button {
+  .ics-download-group {
     width: 100%;
+  }
+
+  .ics-download-button {
+    flex: 1;
   }
 
   .recommendation-calendar-shell {

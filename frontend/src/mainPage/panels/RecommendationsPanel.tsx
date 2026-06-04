@@ -226,7 +226,11 @@ const RecommendationsPanel = ({
 
           {activeRecs && (
             <div className="recommendations-below-card">
-              <RecommendationCalendarExport recs={activeRecs} week={week} name={activeItem.name} />
+              <RecommendationCalendarExport
+                result={activeItem.result}
+                previewWeek={week}
+                name={activeItem.name}
+              />
 
               <section className="recommendations-plan-panel">
                 <div className="recommendations-plan-heading">

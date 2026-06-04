@@ -1,29 +1,24 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, dateFnsLocalizer, type Event as CalendarEvent } from "react-big-calendar";
 import { createEvents, type EventAttributes } from "ics";
 import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
-import type { WeekRecs } from "../../types";
+import type { RecommendationResult, WeekRecs } from "../../types";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./RecommendationCalendarExport.css";
 
 type WeekKey = "current" | "next";
+type DownloadScope = WeekKey | "both";
 
-const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent }) => {
-  return (
-    <div
-      className="calendar-event-card"
-      title={`${event.resource.activity} at ${event.resource.facility}`}
-    >
-      <span className="calendar-event-title">{event.resource.activity}</span>
-      <span className="calendar-event-facility">{event.resource.facility}</span>
-    </div>
-  );
-};
+const DOWNLOAD_SCOPE_OPTIONS: { value: DownloadScope; label: string }[] = [
+  { value: "current", label: "Current week" },
+  { value: "next", label: "Next week" },
+  { value: "both", label: "Both weeks" },
+];
 
 interface RecommendationCalendarExportProps {
-  recs: WeekRecs;
-  week: WeekKey;
+  result: RecommendationResult;
+  previewWeek: WeekKey;
   name: string;
 }
 
@@ -39,6 +34,18 @@ interface RecommendationCalendarEvent extends CalendarEvent {
     time: string;
   };
 }
+
+const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent }) => {
+  return (
+    <div
+      className="calendar-event-card"
+      title={`${event.resource.activity} at ${event.resource.facility}`}
+    >
+      <span className="calendar-event-title">{event.resource.activity}</span>
+      <span className="calendar-event-facility">{event.resource.facility}</span>
+    </div>
+  );
+};
 
 const locales = {
   "en-US": enUS,
@@ -200,18 +207,54 @@ const downloadTextFile = (filename: string, content: string) => {
   URL.revokeObjectURL(url);
 };
 
-const RecommendationCalendarExport = ({ recs, week, name }: RecommendationCalendarExportProps) => {
-  const calendarDate = useMemo(() => getWeekBaseDate(week), [week]);
+const RecommendationCalendarExport = ({
+  result,
+  previewWeek,
+  name,
+}: RecommendationCalendarExportProps) => {
+  const [downloadScope, setDownloadScope] = useState<DownloadScope>("both");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const events = useMemo(() => {
-    const builtEvents = buildCalendarEvents(recs, week);
-    console.log("Calendar input recs:", recs.overall);
-    console.log("Calendar built events:", builtEvents);
-    return builtEvents;
-  }, [recs, week]);
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+
+      if (!menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  const calendarDate = useMemo(() => getWeekBaseDate(previewWeek), [previewWeek]);
+
+  const previewEvents = useMemo(() => {
+    const recs = previewWeek === "current" ? result.currentWeek : result.nextWeek;
+    return buildCalendarEvents(recs, previewWeek);
+  }, [result, previewWeek]);
+
+  const downloadEvents = useMemo(() => {
+    if (downloadScope === "both") {
+      return [
+        ...buildCalendarEvents(result.currentWeek, "current"),
+        ...buildCalendarEvents(result.nextWeek, "next"),
+      ];
+    }
+
+    const recs = downloadScope === "current" ? result.currentWeek : result.nextWeek;
+    return buildCalendarEvents(recs, downloadScope);
+  }, [result, downloadScope]);
 
   const handleDownloadIcs = () => {
-    const icsEvents: EventAttributes[] = events.map((event) => ({
+    const icsEvents: EventAttributes[] = downloadEvents.map((event) => ({
       title: event.title,
       description: `${event.resource.activity} at ${event.resource.facility}`,
       location: event.resource.facility,
@@ -232,7 +275,9 @@ const RecommendationCalendarExport = ({ recs, week, name }: RecommendationCalend
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    downloadTextFile(`${safeName || "recommendations"}-${week}.ics`, value);
+    const scopeLabel = downloadScope === "both" ? "both-weeks" : `${downloadScope}-week`;
+
+    downloadTextFile(`${safeName || "recommendations"}-${scopeLabel}.ics`, value);
   };
 
   return (
@@ -240,7 +285,7 @@ const RecommendationCalendarExport = ({ recs, week, name }: RecommendationCalend
       <div className="recommendation-calendar-header">
         <div>
           <p className="recommendation-calendar-eyebrow">
-            {week === "current" ? "Current week" : "Next week"}
+            {previewWeek === "current" ? "Current week" : "Next week"}
           </p>
           <h3>Calendar Preview</h3>
           <p className="recommendation-calendar-copy">
@@ -248,17 +293,47 @@ const RecommendationCalendarExport = ({ recs, week, name }: RecommendationCalend
           </p>
         </div>
 
-        <button
-          type="button"
-          className="ics-download-button"
-          onClick={handleDownloadIcs}
-          disabled={events.length === 0}
-        >
-          Download .ics
-        </button>
+        <div className="ics-download-group" ref={menuRef}>
+          <button
+            type="button"
+            className="ics-download-button"
+            onClick={handleDownloadIcs}
+            disabled={downloadEvents.length === 0}
+          >
+            Download .ics
+          </button>
+
+          <button
+            aria-expanded={menuOpen}
+            aria-label="Choose weeks to download"
+            className="ics-download-menu-button"
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            ▾
+          </button>
+
+          {menuOpen && (
+            <div className="ics-download-menu">
+              {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  className={downloadScope === option.value ? "active" : ""}
+                  type="button"
+                  onClick={() => {
+                    setDownloadScope(option.value);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {events.length === 0 ? (
+      {previewEvents.length === 0 ? (
         <div className="recommendation-calendar-empty">
           <h4>No calendar events found</h4>
           <p>The planner did not return readable day/time recommendations.</p>
@@ -266,9 +341,9 @@ const RecommendationCalendarExport = ({ recs, week, name }: RecommendationCalend
       ) : (
         <div className="recommendation-calendar-shell">
           <Calendar
-            key={week}
+            key={previewWeek}
             localizer={localizer}
-            events={events}
+            events={previewEvents}
             defaultDate={calendarDate}
             defaultView="week"
             views={["week", "day", "agenda"]}
