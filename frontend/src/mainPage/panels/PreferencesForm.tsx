@@ -122,6 +122,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
 
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={EXERCISE_CATEGORIES}
           value={categories}
           className="preference-autocomplete"
@@ -131,6 +132,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
 
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={ACTIVITIES}
           value={activities}
           className="preference-autocomplete"
@@ -196,6 +198,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
 
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={FACILITIES}
           value={facilities}
           className="preference-autocomplete"
