@@ -1,18 +1,10 @@
 # Filtering functions
 
-import sys
-
-from constants import RECOMMENDATIONS_JSON_PATH, ensure_parent_dir
-from errors import RecommendationError, RecommendationErrorCode, build_error_json
-from output_formatting import save_recommendations_json
+from errors import RecommendationError, RecommendationErrorCode
 
 # Send an error JSON to the recommendations.json file if an exception is raised during filtering detailing the exact process which failed
 def send_error_json(code: RecommendationErrorCode, message: str, *, week: str) -> None:
-    error = RecommendationError(code, message, week=week)
-    ensure_parent_dir(RECOMMENDATIONS_JSON_PATH)
-    save_recommendations_json(build_error_json(error), RECOMMENDATIONS_JSON_PATH)
-    print(error)
-    sys.exit(1)
+    raise RecommendationError(code, message, week=week)
 
 
 # Filter the forecast facility data to only include facilites that user would prefer

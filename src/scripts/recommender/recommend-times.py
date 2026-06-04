@@ -8,6 +8,7 @@ from constants import (
     use_hard_coded_recommendations_save_paths,
 )
 from data_preprocessing import get_current_next_week_numbers, load_data
+from errors import RecommendationError, build_error_json
 from output_formatting import (
     build_recommendations_json,
     format_recommendations_to_print,
@@ -18,23 +19,30 @@ from user_input import invoke_argparse
 
 
 def main():
-    # Get the user's preferences from the command line
-    args = invoke_argparse()
+    try:
+        # Get the user's preferences from the command line
+        args = invoke_argparse()
 
-    # Get the current and next week numbers
-    current_week_number, next_week_number = get_current_next_week_numbers()
-    # Load the current and next week forecast data
-    current_week_forecast, next_week_forecast = load_data(
-        current_week_number, next_week_number
-    )
-    # Recommend the times
-    current_week_recommendations, next_week_recommendations = recommend_times(
-        args,
-        current_week_forecast,
-        next_week_forecast,
-        current_week_number,
-        next_week_number,
-    )
+        # Get the current and next week numbers
+        current_week_number, next_week_number = get_current_next_week_numbers()
+        # Load the current and next week forecast data
+        current_week_forecast, next_week_forecast = load_data(
+            current_week_number, next_week_number
+        )
+        # Recommend the times
+        current_week_recommendations, next_week_recommendations = recommend_times(
+            args,
+            current_week_forecast,
+            next_week_forecast,
+            current_week_number,
+            next_week_number,
+        )
+    except RecommendationError as error:
+        ensure_parent_dir(RECOMMENDATIONS_JSON_PATH)
+        save_recommendations_json(build_error_json(error), RECOMMENDATIONS_JSON_PATH)
+        print(error)
+        raise SystemExit(1) from error
+
     # Save the recommendations to CSV files
     if use_hard_coded_recommendations_save_paths:
         current_path = current_week_recommendations_save_path

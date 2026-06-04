@@ -10,7 +10,7 @@ RECOMMENDATIONS_TXT_PATH = f"{RECOMMENDATIONS_ROOT}/recommendations.txt"
 
 
 def predictions_week_path(week_number: int, filename: str) -> str:
-    return f"{PREDICTIONS_ROOT}/Week {week_number}/{filename}"
+    return f"{PREDICTIONS_ROOT}/week_{week_number}/{filename}"
 
 
 def recommendations_week_path(week_number: int, filename: str = "recommendations.csv") -> str:
