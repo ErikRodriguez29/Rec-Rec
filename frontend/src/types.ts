@@ -1,6 +1,6 @@
 export type DayCode = "M" | "T" | "W" | "R" | "F" | "S" | "U";
 
-export type SlotState = "preferred" | "unavailable" | "googleBusy";
+export type SlotState = "preferred" | "unavailable";
 
 export interface DayHourEntry {
   day: DayCode;

@@ -95,7 +95,7 @@
 }
 
 .calendar-clear-button {
-  color: #7c3aed;
+  color: #64748b;
 }
 
 .calendar-link-status {
@@ -179,8 +179,156 @@
   background: #c2410c;
 }
 
-.swatch--googleBusy {
-  background: #7c3aed;
+.calendar-events-card {
+  background: #f8fafc;
+  border: 1px solid #dbe3ed;
+  border-radius: 10px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.calendar-events-card-title {
+  color: #334155;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.calendar-events-card-copy {
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.calendar-events-toolbar {
+  display: grid;
+  gap: 8px;
+}
+
+.calendar-events-autocomplete {
+  width: 100%;
+}
+
+.calendar-events-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calendar-events-text-button {
+  background: none;
+  border: 0;
+  color: #285c70;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.calendar-events-text-button:hover {
+  text-decoration: underline;
+}
+
+.calendar-events-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.calendar-events-range {
+  min-width: 160px;
+}
+
+.calendar-events-import-button {
+  padding: 9px 12px;
+}
+
+.calendar-events-list-shell {
+  display: grid;
+  gap: 8px;
+}
+
+.calendar-events-list-toolbar {
+  align-items: center;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  gap: 10px;
+}
+
+.calendar-events-list {
+  background: #ffffff;
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+  list-style: none;
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  padding: 0;
+}
+
+.calendar-events-list-item {
+  align-items: flex-start;
+  border-bottom: 1px solid #eef2f7;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.calendar-events-list-item:last-child {
+  border-bottom: 0;
+}
+
+.calendar-events-list-item.selected {
+  background: #eef6f8;
+}
+
+.calendar-events-list-item input {
+  accent-color: #285c70;
+  margin-top: 2px;
+}
+
+.calendar-events-list-body {
+  display: grid;
+  gap: 2px;
+}
+
+.calendar-events-list-title {
+  color: #1e293b;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.calendar-events-list-meta,
+.calendar-events-list-time {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.calendar-events-list-time.free-event {
+  color: #b45309;
+}
+
+.calendar-events-banner {
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.calendar-events-banner--info {
+  color: #475569;
+}
+
+.calendar-events-banner--success {
+  color: #166534;
+}
+
+.calendar-events-banner--warning {
+  color: #b45309;
 }
 
 .time-grid-wrap {
@@ -235,11 +383,6 @@
 .time-cell--unavailable {
   background: #c2410c;
   border-color: #c2410c;
-}
-
-.time-cell--googleBusy {
-  background: #7c3aed;
-  border-color: #7c3aed;
 }
 
 .time-cell--locked {
