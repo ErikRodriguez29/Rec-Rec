@@ -1,116 +1,150 @@
 import { useState } from "react";
-import { Box, Paper, Typography } from "@mui/material";
+import { getRecommendations, RecommendationsApiError } from "../api/recommendations";
+import type { CachedRecommendation, RecommendationFailure, UserPreferences } from "../types";
 import PreferencesForm from "./panels/PreferencesForm";
 import RecommendationsPanel from "./panels/RecommendationsPanel";
-import { getRecommendations, RecommendationsFailedError } from "../utils/getRecommendations";
-import { adaptRecommendations } from "../utils/recommendationsAdapter";
-import {
-  GENERIC_RECOMMENDATION_FAILURE,
-  recommendationFailureFromCode,
-} from "../utils/recommendationErrors";
-import type { RecommendationFailure, RecommendationResult, UserPreferences } from "../types";
+import ResultsViewSwitcher from "./panels/ResultsViewSwitcher";
+import "./TwoPanelLayout.css";
+
+const fallbackError: RecommendationFailure = {
+  userMessage: "No recommendations matched those preferences. Try widening your filters.",
+};
+
+// Don't worry, it's just a brwoser side cache that stores recent recommendations
+const RECOMMENDATIONS_CACHE_KEY = "rec-rec-recommendations-cache";
+const MAX_CACHED_RECOMMENDATIONS = 8;
+
+function loadCachedRecommendations(): CachedRecommendation[] {
+  try {
+    const raw = window.localStorage.getItem(RECOMMENDATIONS_CACHE_KEY);
+    const cached = raw ? (JSON.parse(raw) as CachedRecommendation[]) : [];
+
+    return cached.map((item, index) => ({
+      ...item,
+      colorTheme: item.colorTheme ?? "sage",
+      name: item.name ?? `exercise_plan_${index + 1}`,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function saveCachedRecommendations(next: CachedRecommendation[]): void {
+  window.localStorage.setItem(RECOMMENDATIONS_CACHE_KEY, JSON.stringify(next));
+}
 
 const TwoPanelLayout = () => {
-  const [recommendations, setRecommendations] = useState<RecommendationResult | null>(null);
+  // cache array
+  const [recommendationsCache, setRecommendationsCache] =
+    useState<CachedRecommendation[]>(loadCachedRecommendations);
+
+  // What recommendation is theuser on?
+  const [activeRecommendationIndex, setActiveRecommendationIndex] = useState(0);
   const [error, setError] = useState<RecommendationFailure | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // All handling function for cache recommendation cards
   const handleSubmit = async (prefs: UserPreferences) => {
     setLoading(true);
-    setRecommendations(null);
     setError(null);
+
     try {
-      // The recommender applies the facility / unavailable / rain filters server-side and returns
-      // either a schedule or a structured error, so we render its output directly.
-      const raw = await getRecommendations(prefs);
-      setRecommendations(adaptRecommendations(raw));
-    } catch (e) {
-      setError(
-        e instanceof RecommendationsFailedError
-          ? recommendationFailureFromCode(e.code, e.message)
-          : GENERIC_RECOMMENDATION_FAILURE,
-      );
+      const result = await getRecommendations(prefs);
+
+      const cachedRecommendation: CachedRecommendation = {
+        colorTheme: "sage",
+        id: `${Date.now()}`,
+        generatedAt: new Date().toISOString(),
+        name: `exercise_plan_${recommendationsCache.length + 1}`,
+        result,
+      };
+
+      setRecommendationsCache((current) => {
+        const next = [cachedRecommendation, ...current].slice(0, MAX_CACHED_RECOMMENDATIONS);
+        saveCachedRecommendations(next);
+        return next;
+      });
+
+      setActiveRecommendationIndex(0);
+    } catch (err) {
+      setError({
+        userMessage:
+          err instanceof RecommendationsApiError && err.message
+            ? err.message
+            : fallbackError.userMessage,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const panelSx = {
-    border: "1px solid",
-    borderColor: "divider",
-    p: 3,
-    borderRadius: 3,
-  } as const;
+  const handleRenameRecommendation = (id: string, name: string) => {
+    setRecommendationsCache((current) => {
+      const next = current.map((item) => (item.id === id ? { ...item, name } : item));
+      saveCachedRecommendations(next);
+      return next;
+    });
+  };
 
+  const handleColorRecommendation = (id: string, colorTheme: string) => {
+    setRecommendationsCache((current) => {
+      const next = current.map((item) => (item.id === id ? { ...item, colorTheme } : item));
+
+      saveCachedRecommendations(next);
+      return next;
+    });
+  };
+
+  const handleDeleteRecommendation = (id: string) => {
+    setRecommendationsCache((current) => {
+      const deletedIndex = current.findIndex((item) => item.id === id);
+      const next = current.filter((item) => item.id !== id);
+
+      saveCachedRecommendations(next);
+
+      setActiveRecommendationIndex((index) => {
+        if (next.length === 0) return 0;
+        if (deletedIndex < index) return index - 1;
+        if (deletedIndex === index) return Math.min(index, next.length - 1);
+        return index;
+      });
+
+      return next;
+    });
+  };
+
+  // Start here to find Preferences Form for the right side
+  // Then find RecommendationsPanel for the left side, and follow the props drilling to find the RecommendationCardMenu and RecommendationCardControls
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: { md: "100vh" },
-        minHeight: { xs: "100vh" },
-        bgcolor: "background.default",
-      }}
-    >
-      <Box sx={{ px: { xs: 1.5, md: 3 }, pt: { xs: 1.5, md: 2.5 }, pb: 1 }}>
-        <Typography
-          variant="h5"
-          sx={{ fontWeight: 800, color: "primary.main", letterSpacing: -0.5 }}
-        >
-          Rec-Rec
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          UCSB Recreation Center · Smart Workout Planner
-        </Typography>
-      </Box>
+    <main className="app-shell">
+      <header className="app-header">
+        <h1>Rec-Rec</h1>
+        <p>UCSB Recreation Center Smart Workout Planner</p>
+      </header>
 
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          flex: 1,
-          px: { xs: 1.5, md: 3 },
-          pb: { xs: 1.5, md: 3 },
-          gap: { xs: 2, md: 3 },
-          boxSizing: "border-box",
-          overflow: { md: "hidden" },
-          minHeight: 0,
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            ...panelSx,
-            width: { xs: "100%", md: 420 },
-            flexShrink: 0,
-            height: { md: "100%" },
-            minHeight: { md: 0 },
-            overflow: { md: "hidden" },
-            display: "flex",
-            flexDirection: "column",
-            boxSizing: "border-box",
-          }}
-        >
-          <PreferencesForm onSubmit={handleSubmit} loading={loading} />
-        </Paper>
+      <section className="panel-layout">
+        <aside className="panel panel--form">
+          <PreferencesForm loading={loading} onSubmit={handleSubmit} />
+        </aside>
 
-        <Paper
-          elevation={0}
-          sx={{
-            ...panelSx,
-            flex: 1,
-            height: { md: "100%" },
-            minHeight: { xs: 480, md: 0 },
-            overflow: { md: "hidden" },
-            display: "flex",
-            flexDirection: "column",
-            boxSizing: "border-box",
-          }}
-        >
-          <RecommendationsPanel result={recommendations} error={error} />
-        </Paper>
-      </Box>
-    </Box>
+        <section className="panel--results">
+          <ResultsViewSwitcher
+            recommendationsView={
+              <RecommendationsPanel
+                activeIndex={activeRecommendationIndex}
+                history={recommendationsCache}
+                loading={loading}
+                error={error}
+                onActiveIndexChange={setActiveRecommendationIndex}
+                onColorChange={handleColorRecommendation}
+                onDelete={handleDeleteRecommendation}
+                onRename={handleRenameRecommendation}
+              />
+            }
+          />
+        </section>
+      </section>
+    </main>
   );
 };
 

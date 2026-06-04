@@ -1,0 +1,278 @@
+.recommendation-calendar-export {
+  width: 100%;
+  padding: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.recommendation-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.recommendation-calendar-eyebrow {
+  margin: 0 0 5px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recommendation-calendar-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1.18rem;
+  font-weight: 800;
+}
+
+.recommendation-calendar-copy {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.ics-download-button {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ics-download-button:hover:not(:disabled) {
+  background: #020617;
+}
+
+.ics-download-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.recommendation-calendar-shell {
+  height: 520px;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.recommendation-calendar-shell .rbc-calendar {
+  height: 520px;
+  font-family: inherit;
+}
+
+.recommendation-calendar-shell .rbc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 0;
+}
+
+.recommendation-calendar-shell .rbc-toolbar-label {
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.recommendation-calendar-shell .rbc-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.recommendation-calendar-shell .rbc-toolbar button {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 10px;
+}
+
+.recommendation-calendar-shell .rbc-toolbar button:hover,
+.recommendation-calendar-shell .rbc-toolbar button.rbc-active {
+  background: #111827;
+  color: #ffffff;
+}
+
+.recommendation-calendar-shell .rbc-time-view,
+.recommendation-calendar-shell .rbc-time-header,
+.recommendation-calendar-shell .rbc-time-content,
+.recommendation-calendar-shell .rbc-timeslot-group,
+.recommendation-calendar-shell .rbc-header {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.recommendation-calendar-shell .rbc-header {
+  padding: 9px 4px;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.recommendation-calendar-shell .rbc-time-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.recommendation-calendar-shell .rbc-timeslot-group {
+  min-height: 52px;
+}
+
+.recommendation-calendar-shell .rbc-time-slot {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.recommendation-calendar-shell .rbc-today {
+  background: #f8fafc;
+}
+
+.recommendation-calendar-shell .rbc-current-time-indicator {
+  background: #ef4444;
+  height: 2px;
+}
+
+.recommendation-calendar-shell .rbc-day-slot .rbc-events-container {
+  margin-right: 4px;
+}
+
+.recommendation-calendar-shell .rbc-event {
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.recommendation-calendar-shell .rbc-event-content {
+  height: 100%;
+  overflow: hidden;
+}
+
+.recommendation-calendar-shell .rbc-event-label {
+  display: none;
+}
+
+.calendar-event-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #285c70;
+  color: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.calendar-event-card:hover {
+  background: #1f4d5f;
+  transform: scale(1.015);
+}
+
+.calendar-event-title {
+  display: block;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.calendar-event-facility {
+  display: block;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-calendar-empty {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 24px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.recommendation-calendar-empty h4 {
+  margin: 0 0 6px;
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.recommendation-calendar-empty p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 820px) {
+  .recommendation-calendar-export {
+    padding: 16px;
+  }
+
+  .recommendation-calendar-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ics-download-button {
+    width: 100%;
+  }
+
+  .recommendation-calendar-shell {
+    height: 500px;
+    min-height: 500px;
+  }
+
+  .recommendation-calendar-shell .rbc-calendar {
+    height: 500px;
+  }
+
+  .recommendation-calendar-shell .rbc-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recommendation-calendar-shell .rbc-btn-group {
+    width: 100%;
+  }
+
+  .recommendation-calendar-shell .rbc-btn-group button {
+    flex: 1;
+  }
+}

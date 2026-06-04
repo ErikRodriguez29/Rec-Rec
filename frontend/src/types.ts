@@ -1,6 +1,6 @@
 export type DayCode = "M" | "T" | "W" | "R" | "F" | "S" | "U";
 
-export type SlotState = "preferred" | "unavailable";
+export type SlotState = "preferred" | "unavailable" | "googleBusy";
 
 export interface DayHourEntry {
   day: DayCode;
@@ -50,6 +50,14 @@ export interface WeekRecs {
 export interface RecommendationResult {
   currentWeek: WeekRecs;
   nextWeek: WeekRecs;
+}
+
+export interface CachedRecommendation {
+  colorTheme: string;
+  id: string;
+  generatedAt: string;
+  name: string;
+  result: RecommendationResult;
 }
 
 export interface RecommendationFailure {

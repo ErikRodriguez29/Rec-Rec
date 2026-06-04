@@ -1,19 +1,5 @@
 import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
-import type { Plugin, PreviewServer, ViteDevServer } from "vite";
-
-function recommendationsApiPlugin(): Plugin {
-  async function attach(server: ViteDevServer | PreviewServer): Promise<void> {
-    const { attachRecommendationsMiddleware } = await import("./vite-plugin-recommendations.ts");
-    attachRecommendationsMiddleware(server);
-  }
-
-  return {
-    name: "recommendations-api",
-    configureServer: attach,
-    configurePreviewServer: attach,
-  };
-}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -129,7 +115,7 @@ export default defineConfig({
         },
       },
       {
-        files: ["vite.config.ts", "vite-plugin-recommendations.ts"],
+        files: ["vite.config.ts"],
         env: {
           node: true,
         },
@@ -140,5 +126,5 @@ export default defineConfig({
       typeCheck: true,
     },
   },
-  plugins: [react(), recommendationsApiPlugin()],
+  plugins: [react()],
 });
