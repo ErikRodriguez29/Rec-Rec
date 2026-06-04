@@ -38,14 +38,35 @@
   line-height: 1.45;
 }
 
-.ics-download-group {
+.calendar-export-actions {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calendar-export-message {
+  color: #475569;
+  font-size: 0.84rem;
+  margin: 0;
+  max-width: 360px;
+  text-align: right;
+}
+
+.calendar-export-groups {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calendar-export-group {
   display: inline-flex;
   position: relative;
 }
 
-.ics-download-button,
-.ics-download-menu-button {
-  background: #111827;
+.calendar-export-button,
+.calendar-export-menu-button {
   border: none;
   color: #ffffff;
   cursor: pointer;
@@ -54,14 +75,34 @@
   font-weight: 800;
 }
 
-.ics-download-button {
+.calendar-export-group--ics .calendar-export-button,
+.calendar-export-group--ics .calendar-export-menu-button {
+  background: #285c70;
+}
+
+.calendar-export-group--ics .calendar-export-button:hover:not(:disabled),
+.calendar-export-group--ics .calendar-export-menu-button:hover {
+  background: #1f4a59;
+}
+
+.calendar-export-group--google .calendar-export-button,
+.calendar-export-group--google .calendar-export-menu-button {
+  background: #111827;
+}
+
+.calendar-export-group--google .calendar-export-button:hover:not(:disabled),
+.calendar-export-group--google .calendar-export-menu-button:hover {
+  background: #020617;
+}
+
+.calendar-export-button {
   border-radius: 10px 0 0 10px;
   border-right: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 11px 18px;
+  padding: 11px 16px;
   white-space: nowrap;
 }
 
-.ics-download-menu-button {
+.calendar-export-menu-button {
   align-items: center;
   border-radius: 0 10px 10px 0;
   display: flex;
@@ -72,17 +113,12 @@
   padding: 11px 12px;
 }
 
-.ics-download-menu-button:hover,
-.ics-download-button:hover:not(:disabled) {
-  background: #020617;
-}
-
-.ics-download-button:disabled {
+.calendar-export-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
 
-.ics-download-menu {
+.calendar-export-menu {
   background: #ffffff;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
@@ -97,7 +133,7 @@
   z-index: 2;
 }
 
-.ics-download-menu button {
+.calendar-export-menu button {
   background: transparent;
   border: 0;
   border-radius: 6px;
@@ -110,11 +146,11 @@
   text-align: left;
 }
 
-.ics-download-menu button:hover {
+.calendar-export-menu button:hover {
   background: #f8fafc;
 }
 
-.ics-download-menu button.active {
+.calendar-export-menu button.active {
   background: #eef6f8;
   color: #111827;
 }
@@ -309,12 +345,22 @@
     flex-direction: column;
   }
 
-  .ics-download-group {
+  .calendar-export-actions {
+    align-items: stretch;
     width: 100%;
   }
 
-  .ics-download-button {
-    flex: 1;
+  .calendar-export-groups {
+    width: 100%;
+  }
+
+  .calendar-export-group {
+    width: 100%;
+  }
+
+  .calendar-export-message {
+    max-width: none;
+    text-align: left;
   }
 
   .recommendation-calendar-shell {

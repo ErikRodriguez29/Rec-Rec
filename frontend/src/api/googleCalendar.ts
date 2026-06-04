@@ -1,6 +1,7 @@
 import type { DayCode } from "../types";
 
-const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+const GOOGLE_CALENDAR_READONLY_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+const GOOGLE_CALENDAR_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 
 declare global {
   interface Window {
@@ -25,7 +26,7 @@ function dayToCode(date: Date): DayCode {
   return codes[date.getDay()];
 }
 
-export function requestGoogleCalendarToken(): Promise<string> {
+function requestGoogleCalendarTokenWithScope(scope: string): Promise<string> {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   if (!clientId) {
@@ -39,7 +40,7 @@ export function requestGoogleCalendarToken(): Promise<string> {
   return new Promise((resolve, reject) => {
     const tokenClient = window.google!.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: GOOGLE_CALENDAR_SCOPE,
+      scope,
       callback: (response) => {
         if (response.error || !response.access_token) {
           reject(new Error(response.error || "Could not link Google Calendar."));
@@ -52,6 +53,65 @@ export function requestGoogleCalendarToken(): Promise<string> {
 
     tokenClient.requestAccessToken();
   });
+}
+
+export function requestGoogleCalendarToken(): Promise<string> {
+  return requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_READONLY_SCOPE);
+}
+
+export function requestGoogleCalendarWriteToken(): Promise<string> {
+  return requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_EVENTS_SCOPE);
+}
+
+export type GoogleCalendarExportEvent = {
+  title: string;
+  description: string;
+  location: string;
+  start: Date;
+  end: Date;
+};
+
+function formatLocalDateTime(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+}
+
+export async function insertGoogleCalendarEvents(
+  accessToken: string,
+  events: readonly GoogleCalendarExportEvent[],
+  calendarId = "primary",
+): Promise<number> {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let created = 0;
+
+  for (const event of events) {
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          summary: event.title,
+          description: event.description,
+          location: event.location,
+          start: { dateTime: formatLocalDateTime(event.start), timeZone },
+          end: { dateTime: formatLocalDateTime(event.end), timeZone },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not add events to Google Calendar.");
+    }
+
+    created += 1;
+  }
+
+  return created;
 }
 
 export type BusyInterval = { start: string; end: string };

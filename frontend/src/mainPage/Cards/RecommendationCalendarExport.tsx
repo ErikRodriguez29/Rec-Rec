@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Calendar, dateFnsLocalizer, type Event as CalendarEvent } from "react-big-calendar";
 import { createEvents, type EventAttributes } from "ics";
 import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import type { RecommendationResult, WeekRecs } from "../../types";
+import {
+  insertGoogleCalendarEvents,
+  requestGoogleCalendarWriteToken,
+} from "../../api/googleCalendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./RecommendationCalendarExport.css";
 
 type WeekKey = "current" | "next";
 type DownloadScope = WeekKey | "both";
 
-const DOWNLOAD_SCOPE_OPTIONS: { value: DownloadScope; label: string }[] = [
+const EXPORT_SCOPE_OPTIONS: { value: DownloadScope; label: string }[] = [
   { value: "current", label: "Current week" },
   { value: "next", label: "Next week" },
   { value: "both", label: "Both weeks" },
@@ -192,6 +196,18 @@ const buildCalendarEvents = (recs: WeekRecs, week: WeekKey): RecommendationCalen
     .filter((event): event is RecommendationCalendarEvent => event !== null);
 };
 
+const buildExportEvents = (result: RecommendationResult, scope: DownloadScope) => {
+  if (scope === "both") {
+    return [
+      ...buildCalendarEvents(result.currentWeek, "current"),
+      ...buildCalendarEvents(result.nextWeek, "next"),
+    ];
+  }
+
+  const recs = scope === "current" ? result.currentWeek : result.nextWeek;
+  return buildCalendarEvents(recs, scope);
+};
+
 const downloadTextFile = (filename: string, content: string) => {
   const blob = new Blob([content], {
     type: "text/calendar;charset=utf-8",
@@ -207,23 +223,90 @@ const downloadTextFile = (filename: string, content: string) => {
   URL.revokeObjectURL(url);
 };
 
+interface ExportButtonGroupProps {
+  actionLabel: string;
+  disabled: boolean;
+  loading?: boolean;
+  menuOpen: boolean;
+  menuRef: RefObject<HTMLDivElement | null>;
+  onAction: () => void;
+  onScopeChange: (scope: DownloadScope) => void;
+  onToggleMenu: () => void;
+  scope: DownloadScope;
+  tone: "ics" | "google";
+}
+
+const ExportButtonGroup = ({
+  actionLabel,
+  disabled,
+  loading = false,
+  menuOpen,
+  menuRef,
+  onAction,
+  onScopeChange,
+  onToggleMenu,
+  scope,
+  tone,
+}: ExportButtonGroupProps) => (
+  <div className={`calendar-export-group calendar-export-group--${tone}`} ref={menuRef}>
+    <button
+      type="button"
+      className="calendar-export-button"
+      disabled={disabled || loading}
+      onClick={onAction}
+    >
+      {loading ? "Adding..." : actionLabel}
+    </button>
+
+    <button
+      aria-expanded={menuOpen}
+      aria-label={`Choose weeks for ${actionLabel}`}
+      className="calendar-export-menu-button"
+      type="button"
+      onClick={onToggleMenu}
+    >
+      ▾
+    </button>
+
+    {menuOpen && (
+      <div className="calendar-export-menu">
+        {EXPORT_SCOPE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            className={scope === option.value ? "active" : ""}
+            type="button"
+            onClick={() => onScopeChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 const RecommendationCalendarExport = ({
   result,
   previewWeek,
   name,
 }: RecommendationCalendarExportProps) => {
-  const [downloadScope, setDownloadScope] = useState<DownloadScope>("both");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [icsScope, setIcsScope] = useState<DownloadScope>("both");
+  const [googleScope, setGoogleScope] = useState<DownloadScope>("both");
+  const [icsMenuOpen, setIcsMenuOpen] = useState(false);
+  const [googleMenuOpen, setGoogleMenuOpen] = useState(false);
+  const [googleExporting, setGoogleExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const icsMenuRef = useRef<HTMLDivElement>(null);
+  const googleMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!icsMenuOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return;
+      if (!icsMenuRef.current) return;
 
-      if (!menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
+      if (!icsMenuRef.current.contains(event.target as Node)) {
+        setIcsMenuOpen(false);
       }
     };
 
@@ -232,7 +315,25 @@ const RecommendationCalendarExport = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [menuOpen]);
+  }, [icsMenuOpen]);
+
+  useEffect(() => {
+    if (!googleMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!googleMenuRef.current) return;
+
+      if (!googleMenuRef.current.contains(event.target as Node)) {
+        setGoogleMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [googleMenuOpen]);
 
   const calendarDate = useMemo(() => getWeekBaseDate(previewWeek), [previewWeek]);
 
@@ -241,20 +342,13 @@ const RecommendationCalendarExport = ({
     return buildCalendarEvents(recs, previewWeek);
   }, [result, previewWeek]);
 
-  const downloadEvents = useMemo(() => {
-    if (downloadScope === "both") {
-      return [
-        ...buildCalendarEvents(result.currentWeek, "current"),
-        ...buildCalendarEvents(result.nextWeek, "next"),
-      ];
-    }
-
-    const recs = downloadScope === "current" ? result.currentWeek : result.nextWeek;
-    return buildCalendarEvents(recs, downloadScope);
-  }, [result, downloadScope]);
+  const icsEvents = useMemo(() => buildExportEvents(result, icsScope), [result, icsScope]);
+  const googleEvents = useMemo(() => buildExportEvents(result, googleScope), [result, googleScope]);
 
   const handleDownloadIcs = () => {
-    const icsEvents: EventAttributes[] = downloadEvents.map((event) => ({
+    setExportMessage(null);
+
+    const events: EventAttributes[] = icsEvents.map((event) => ({
       title: event.title,
       description: `${event.resource.activity} at ${event.resource.facility}`,
       location: event.resource.facility,
@@ -264,7 +358,7 @@ const RecommendationCalendarExport = ({
       endInputType: "local",
     }));
 
-    const { error, value } = createEvents(icsEvents);
+    const { error, value } = createEvents(events);
 
     if (error || !value) {
       return;
@@ -275,9 +369,38 @@ const RecommendationCalendarExport = ({
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    const scopeLabel = downloadScope === "both" ? "both-weeks" : `${downloadScope}-week`;
+    const scopeLabel = icsScope === "both" ? "both-weeks" : `${icsScope}-week`;
 
     downloadTextFile(`${safeName || "recommendations"}-${scopeLabel}.ics`, value);
+  };
+
+  const handleAddToGoogleCalendar = async () => {
+    if (googleExporting || googleEvents.length === 0) return;
+
+    setGoogleExporting(true);
+    setExportMessage(null);
+
+    try {
+      const token = await requestGoogleCalendarWriteToken();
+      const created = await insertGoogleCalendarEvents(
+        token,
+        googleEvents.map((event) => ({
+          title: event.title,
+          description: `${event.resource.activity} at ${event.resource.facility}`,
+          location: event.resource.facility,
+          start: event.start,
+          end: event.end,
+        })),
+      );
+
+      setExportMessage(`Added ${created} event${created === 1 ? "" : "s"} to Google Calendar.`);
+    } catch (error) {
+      setExportMessage(
+        error instanceof Error ? error.message : "Could not add events to Google Calendar.",
+      );
+    } finally {
+      setGoogleExporting(false);
+    }
   };
 
   return (
@@ -289,47 +412,45 @@ const RecommendationCalendarExport = ({
           </p>
           <h3>Calendar Preview</h3>
           <p className="recommendation-calendar-copy">
-            Preview this schedule or download it as an .ics calendar file.
+            Preview this schedule, download an .ics file, or add events to Google Calendar.
           </p>
         </div>
 
-        <div className="ics-download-group" ref={menuRef}>
-          <button
-            type="button"
-            className="ics-download-button"
-            onClick={handleDownloadIcs}
-            disabled={downloadEvents.length === 0}
-          >
-            Download .ics
-          </button>
+        <div className="calendar-export-actions">
+          <div className="calendar-export-groups">
+            <ExportButtonGroup
+              actionLabel="Add to Google Calendar"
+              disabled={googleEvents.length === 0}
+              loading={googleExporting}
+              menuOpen={googleMenuOpen}
+              menuRef={googleMenuRef}
+              scope={googleScope}
+              tone="google"
+              onAction={() => void handleAddToGoogleCalendar()}
+              onScopeChange={(scope) => {
+                setGoogleScope(scope);
+                setGoogleMenuOpen(false);
+              }}
+              onToggleMenu={() => setGoogleMenuOpen((open) => !open)}
+            />
 
-          <button
-            aria-expanded={menuOpen}
-            aria-label="Choose weeks to download"
-            className="ics-download-menu-button"
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            ▾
-          </button>
+            <ExportButtonGroup
+              actionLabel="Download .ics"
+              disabled={icsEvents.length === 0}
+              menuOpen={icsMenuOpen}
+              menuRef={icsMenuRef}
+              scope={icsScope}
+              tone="ics"
+              onAction={handleDownloadIcs}
+              onScopeChange={(scope) => {
+                setIcsScope(scope);
+                setIcsMenuOpen(false);
+              }}
+              onToggleMenu={() => setIcsMenuOpen((open) => !open)}
+            />
+          </div>
 
-          {menuOpen && (
-            <div className="ics-download-menu">
-              {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  className={downloadScope === option.value ? "active" : ""}
-                  type="button"
-                  onClick={() => {
-                    setDownloadScope(option.value);
-                    setMenuOpen(false);
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {exportMessage && <p className="calendar-export-message">{exportMessage}</p>}
         </div>
       </div>
 
