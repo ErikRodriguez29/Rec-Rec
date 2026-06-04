@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Load VITE_* secrets from repo-root .env
+  envDir: "..",
   staged: {
     "*": "vp check --fix",
   },
