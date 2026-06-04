@@ -93,6 +93,13 @@ pnpm install
 pnpm run dev
 ```
 
+### Backend
+
+To run the backend, run the following from the `src/scripts/recommender/` directory:
+```bash
+pip install "fastapi[standard]"
+fastapi dev server.py
+```
 ## Project layout
 
 ```
