@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Autocomplete, TextField } from "@mui/material";
 import { ACTIVITIES, DAY_CONFIGS, EXERCISE_CATEGORIES, FACILITIES } from "../../constants";
 import type { DayCode, DayHourEntry, SlotState, UserPreferences } from "../../types";
-import { fetchGoogleBusySlots, requestGoogleCalendarToken } from "../../api/googleCalendar";
+import { useGoogleCalendarLink } from "../../useGoogleCalendarLink";
+import GoogleCalendarEventImporter from "../components/GoogleCalendarEventImporter";
 import TimeGrid from "../components/TimeGrid";
 import "./PreferencesForm.css";
 
@@ -64,15 +65,17 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
   const [slotMap, setSlotMap] = useState<Map<string, SlotState>>(new Map());
   const [rainFilter, setRainFilter] = useState(false);
   const [facilitiesHardFilter, setFacilitiesHardFilter] = useState(false);
-  const [calendarLoading, setCalendarLoading] = useState(false);
-  const [calendarLinked, setCalendarLinked] = useState(false);
-  const [calendarError, setCalendarError] = useState("");
+  const {
+    linked: googleLinked,
+    accessToken,
+    loading: calendarLoading,
+    error: calendarError,
+    link: linkGoogleCalendar,
+    disconnect: disconnectGoogleCalendar,
+  } = useGoogleCalendarLink();
 
   const preferredSlots = filterSlots(slotMap, "preferred");
-  const manualUnavailableSlots = filterSlots(slotMap, "unavailable");
-  const googleBusySlots = filterSlots(slotMap, "googleBusy");
-
-  const unavailableSlots = new Set([...manualUnavailableSlots, ...googleBusySlots]);
+  const unavailableSlots = filterSlots(slotMap, "unavailable");
 
   const isValid = activities.length > 0 || categories.length > 0;
 
@@ -86,53 +89,20 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
     preferredFacilitiesHardFilter: facilitiesHardFilter,
   };
 
-  const handleLinkGoogleCalendar = async () => {
-    if (calendarLoading) return;
-
-    setCalendarLoading(true);
-    setCalendarError("");
-
-    try {
-      const token = await requestGoogleCalendarToken();
-      const busySlots = await fetchGoogleBusySlots(token);
-
-      setSlotMap((current) => {
-        const next = new Map(current);
-
-        for (const slot of busySlots) {
-          const key = `${slot.day}-${slot.hour}`;
-
-          if (!next.has(key)) {
-            next.set(key, "googleBusy");
-          }
-        }
-
-        return next;
-      });
-
-      setCalendarLinked(true);
-    } catch (error) {
-      setCalendarError(error instanceof Error ? error.message : "Could not link Google Calendar.");
-    } finally {
-      setCalendarLoading(false);
-    }
+  const handleLinkGoogleCalendar = () => {
+    void linkGoogleCalendar();
   };
 
-  const clearGoogleCalendarSlots = () => {
+  const mergeUnavailableSlots = (keys: ReadonlySet<string>) => {
     setSlotMap((current) => {
       const next = new Map(current);
 
-      for (const [key, value] of next.entries()) {
-        if (value === "googleBusy") {
-          next.delete(key);
-        }
+      for (const key of keys) {
+        next.set(key, "unavailable");
       }
 
       return next;
     });
-
-    setCalendarLinked(false);
-    setCalendarError("");
   };
 
   return (
@@ -152,6 +122,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
 
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={EXERCISE_CATEGORIES}
           value={categories}
           className="preference-autocomplete"
@@ -161,6 +132,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
 
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={ACTIVITIES}
           value={activities}
           className="preference-autocomplete"
@@ -181,36 +153,43 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
           >
             {calendarLoading
               ? "Reading Google Calendar..."
-              : calendarLinked
+              : googleLinked
                 ? "Refresh Google Calendar"
                 : "Link Google Calendar"}
           </button>
 
-          {calendarLinked && (
+          {googleLinked && (
             <button
               className="calendar-clear-button"
               type="button"
-              onClick={clearGoogleCalendarSlots}
+              onClick={disconnectGoogleCalendar}
             >
-              Clear Google busy times
+              Disconnect Google Calendar
             </button>
           )}
         </div>
 
-        {calendarLinked && (
+        {accessToken && (
           <p className="calendar-link-status">
-            Google Calendar busy times were added in purple. Click a purple slot to remove it.
+            Google Calendar connected. Load events below, then import selected times as busy on the
+            grid.
           </p>
         )}
 
         {calendarError && <p className="calendar-link-error">{calendarError}</p>}
 
+        {accessToken && (
+          <GoogleCalendarEventImporter
+            accessToken={accessToken}
+            onImportUnavailable={mergeUnavailableSlots}
+          />
+        )}
+
         <TimeGrid onChange={setSlotMap} slots={slotMap} />
 
         <div className="slot-summary">
           {preferredSlots.size > 0 && <p>Free: {slotsSummary(preferredSlots)}</p>}
-          {manualUnavailableSlots.size > 0 && <p>Busy: {slotsSummary(manualUnavailableSlots)}</p>}
-          {googleBusySlots.size > 0 && <p>Google busy: {slotsSummary(googleBusySlots)}</p>}
+          {unavailableSlots.size > 0 && <p>Busy: {slotsSummary(unavailableSlots)}</p>}
         </div>
       </fieldset>
 
@@ -219,6 +198,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
 
         <Autocomplete
           multiple
+          disableCloseOnSelect
           options={FACILITIES}
           value={facilities}
           className="preference-autocomplete"

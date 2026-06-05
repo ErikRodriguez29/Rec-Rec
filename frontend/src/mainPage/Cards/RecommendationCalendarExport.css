@@ -38,26 +38,223 @@
   line-height: 1.45;
 }
 
-.ics-download-button {
+.calendar-export-actions {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calendar-export-groups {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.google-calendar-target {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.google-calendar-target-label {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.calendar-link-button {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #285c70;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 9px 12px;
+  width: 100%;
+}
+
+.calendar-link-button:hover:not(:disabled) {
+  background: #f2f7f8;
+  border-color: #9fbac3;
+}
+
+.calendar-link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.calendar-link-button--compact {
+  align-self: flex-end;
+  font-size: 0.74rem;
+  padding: 4px 8px;
+  width: auto;
+}
+
+.calendar-link-status,
+.calendar-link-error {
+  font-size: 0.84rem;
+  margin: 0;
+  text-align: right;
+  width: 100%;
+}
+
+.calendar-link-status {
+  color: #166534;
+  font-weight: 600;
+}
+
+.calendar-link-error {
+  color: #b45309;
+}
+
+.google-calendar-target-select {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  color: #334155;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.google-calendar-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.google-calendar-create-input {
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  color: #334155;
+  flex: 1 1 160px;
+  font: inherit;
+  font-size: 0.88rem;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.calendar-export-text-button {
+  background: none;
+  border: 0;
+  color: #285c70;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.calendar-export-text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.calendar-export-text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.calendar-export-group {
+  display: inline-flex;
+  position: relative;
+}
+
+.calendar-export-button,
+.calendar-export-menu-button {
   border: none;
-  border-radius: 10px;
-  padding: 11px 18px;
-  background: #111827;
   color: #ffffff;
   cursor: pointer;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 800;
-  white-space: nowrap;
 }
 
-.ics-download-button:hover:not(:disabled) {
+.calendar-export-group--ics .calendar-export-button,
+.calendar-export-group--ics .calendar-export-menu-button {
+  background: #285c70;
+}
+
+.calendar-export-group--ics .calendar-export-button:hover:not(:disabled),
+.calendar-export-group--ics .calendar-export-menu-button:hover {
+  background: #1f4a59;
+}
+
+.calendar-export-group--google .calendar-export-button,
+.calendar-export-group--google .calendar-export-menu-button {
+  background: #111827;
+}
+
+.calendar-export-group--google .calendar-export-button:hover:not(:disabled),
+.calendar-export-group--google .calendar-export-menu-button:hover {
   background: #020617;
 }
 
-.ics-download-button:disabled {
+.calendar-export-button {
+  border-radius: 10px 0 0 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 11px 16px;
+  white-space: nowrap;
+}
+
+.calendar-export-menu-button {
+  align-items: center;
+  border-radius: 0 10px 10px 0;
+  display: flex;
+  font-size: 0.95rem;
+  justify-content: center;
+  line-height: 1;
+  min-width: 42px;
+  padding: 11px 12px;
+}
+
+.calendar-export-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.calendar-export-menu {
+  background: #ffffff;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 2;
+}
+
+.calendar-export-menu button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.calendar-export-menu button:hover {
+  background: #f8fafc;
+}
+
+.calendar-export-menu button.active {
+  background: #eef6f8;
+  color: #111827;
 }
 
 .recommendation-calendar-shell {
@@ -250,8 +447,24 @@
     flex-direction: column;
   }
 
-  .ics-download-button {
+  .calendar-export-actions {
+    align-items: stretch;
     width: 100%;
+  }
+
+  .calendar-export-groups {
+    width: 100%;
+  }
+
+  .google-calendar-target,
+  .calendar-export-group {
+    max-width: none;
+    width: 100%;
+  }
+
+  .calendar-link-status,
+  .calendar-link-error {
+    text-align: left;
   }
 
   .recommendation-calendar-shell {
