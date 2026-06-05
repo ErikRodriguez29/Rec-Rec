@@ -3,6 +3,7 @@ import { Calendar, dateFnsLocalizer, type Event as CalendarEvent } from "react-b
 import { createEvents, type EventAttributes } from "ics";
 import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
+import { DAY_CONFIGS } from "../../constants";
 import type { RecommendationResult, WeekRecs } from "../../types";
 import {
   createGoogleCalendar,
@@ -59,6 +60,8 @@ const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent }) =>
   );
 };
 
+const weekStartOptions = { weekStartsOn: 1 as const };
+
 const locales = {
   "en-US": enUS,
 };
@@ -66,39 +69,18 @@ const locales = {
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+  startOfWeek: (date: Date) => startOfWeek(date, weekStartOptions),
   getDay,
   locales,
 });
 
-const dayOffsetByValue: Record<string, number> = {
-  U: 0,
-  SUNDAY: 0,
-  SUN: 0,
-
-  M: 1,
-  MONDAY: 1,
-  MON: 1,
-
-  T: 2,
-  TUESDAY: 2,
-  TUE: 2,
-
-  W: 3,
-  WEDNESDAY: 3,
-  WED: 3,
-
-  R: 4,
-  THURSDAY: 4,
-  THU: 4,
-
-  F: 5,
-  FRIDAY: 5,
-  FRI: 5,
-
-  SATURDAY: 6,
-  SAT: 6,
-};
+const dayOffsetByValue: Record<string, number> = Object.fromEntries(
+  DAY_CONFIGS.flatMap(({ code, name }, index) => [
+    [code, index],
+    [name.toUpperCase(), index],
+    [name.slice(0, 3).toUpperCase(), index],
+  ]),
+);
 
 const getDayOffset = (day: string) => {
   return dayOffsetByValue[day.trim().toUpperCase()] ?? null;
@@ -145,10 +127,10 @@ const normalizeTime = (time: string) => {
 };
 
 const getWeekBaseDate = (week: WeekKey) => {
-  const currentSunday = startOfWeek(new Date(), { weekStartsOn: 0 });
-  currentSunday.setHours(0, 0, 0, 0);
+  const weekStart = startOfWeek(new Date(), weekStartOptions);
+  weekStart.setHours(0, 0, 0, 0);
 
-  return week === "current" ? currentSunday : addDays(currentSunday, 7);
+  return week === "current" ? weekStart : addDays(weekStart, 7);
 };
 
 const dateToIcsTuple = (date: Date): [number, number, number, number, number] => [
