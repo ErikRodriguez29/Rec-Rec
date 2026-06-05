@@ -322,7 +322,8 @@
 .recommendation-calendar-shell .rbc-time-header,
 .recommendation-calendar-shell .rbc-time-content,
 .recommendation-calendar-shell .rbc-timeslot-group,
-.recommendation-calendar-shell .rbc-header {
+.recommendation-calendar-shell .rbc-header,
+.recommendation-calendar-shell .rbc-agenda-view table.rbc-agenda-table {
   border-color: rgba(15, 23, 42, 0.08);
 }
 
@@ -333,11 +334,16 @@
   font-weight: 800;
 }
 
-.recommendation-calendar-shell .rbc-time-view {
+.recommendation-calendar-shell .rbc-time-view,
+.recommendation-calendar-shell .rbc-agenda-view {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
+}
+
+.recommendation-calendar-shell .rbc-agenda-view {
+  overflow: auto;
 }
 
 .recommendation-calendar-shell .rbc-time-content {
