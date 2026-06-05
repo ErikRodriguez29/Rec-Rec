@@ -93,6 +93,14 @@ pnpm install
 pnpm run dev
 ```
 
+### Backend
+
+To run the backend, run the following from the `src/scripts/recommender/` directory:
+```bash
+pip install "fastapi[standard]"
+fastapi dev server.py
+```
+
 ## Project layout
 
 ```
@@ -107,7 +115,7 @@ src/
   scripts/
     R/                   # EDA.R, Training.R, Predictions.R, renv
     facility-counts.py
-    recommender/         # Python recommender modules + recommend-times.py
+    recommender/         # Python recommender modules + recommend-times.py, server.py
 ```
 
 For more details on the scripts, see: [`src/scripts/README.md`](src/scripts/README.md).

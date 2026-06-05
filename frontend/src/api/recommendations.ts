@@ -60,7 +60,9 @@ export class RecommendationsApiError extends Error {
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_RECOMMENDATIONS_API_URL ?? "/api",
+  baseURL:
+    import.meta.env.VITE_RECOMMENDATIONS_API_URL ??
+    (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api"),
   headers: {
     "Content-Type": "application/json",
   },
