@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Calendar, dateFnsLocalizer, type Event as CalendarEvent } from "react-big-calendar";
+import {
+  Calendar,
+  dateFnsLocalizer,
+  type Event as CalendarEvent,
+  type View,
+} from "react-big-calendar";
 import { createEvents, type EventAttributes } from "ics";
-import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
+import { addDays, format, getDay, parse, startOfDay, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import { DAY_CONFIGS } from "../../constants";
 import type { RecommendationResult, WeekRecs } from "../../types";
@@ -32,8 +37,11 @@ const CALENDAR_PREVIEW_MAX = new Date(1970, 0, 1, 23, 0, 0);
 interface RecommendationCalendarExportProps {
   result: RecommendationResult;
   previewWeek: WeekKey;
+  onPreviewWeekChange: (week: WeekKey) => void;
   name: string;
 }
+
+const AGENDA_DAY_COUNT = 14;
 
 interface RecommendationCalendarEvent extends CalendarEvent {
   title: string;
@@ -131,6 +139,83 @@ const getWeekBaseDate = (week: WeekKey) => {
   weekStart.setHours(0, 0, 0, 0);
 
   return week === "current" ? weekStart : addDays(weekStart, 7);
+};
+
+const getWeekKeyForDate = (date: Date): WeekKey | null => {
+  const weekStart = startOfWeek(date, weekStartOptions);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const currentStart = getWeekBaseDate("current");
+  const nextStart = getWeekBaseDate("next");
+
+  if (weekStart.getTime() === currentStart.getTime()) return "current";
+  if (weekStart.getTime() === nextStart.getTime()) return "next";
+
+  return null;
+};
+
+const toPreviewUnit = (date: Date, byWeek: boolean) => {
+  const unit = byWeek ? startOfWeek(date, weekStartOptions) : startOfDay(date);
+  unit.setHours(0, 0, 0, 0);
+  return unit;
+};
+
+const buildPreviewBounds = (events: RecommendationCalendarEvent[]) => {
+  const days = new Map<number, Date>();
+  const weeks = new Map<number, Date>();
+
+  for (const event of events) {
+    const day = startOfDay(event.start);
+    days.set(day.getTime(), day);
+
+    const week = startOfWeek(event.start, weekStartOptions);
+    week.setHours(0, 0, 0, 0);
+    weeks.set(week.getTime(), week);
+  }
+
+  const sortDates = (entries: Map<number, Date>) =>
+    [...entries.values()].sort((left, right) => left.getTime() - right.getTime());
+
+  return { days: sortDates(days), weeks: sortDates(weeks) };
+};
+
+const clampPreviewDate = (
+  allowed: Date[],
+  newDate: Date,
+  currentDate: Date,
+  action: string | undefined,
+  byWeek: boolean,
+) => {
+  if (allowed.length === 0) return newDate;
+
+  const unitKey = (date: Date) => toPreviewUnit(date, byWeek).getTime();
+  const targetMs = unitKey(newDate);
+
+  if (allowed.some((date) => unitKey(date) === targetMs)) {
+    return toPreviewUnit(newDate, byWeek);
+  }
+
+  const currentMs = unitKey(currentDate);
+  const sorted = [...allowed].sort((left, right) => unitKey(left) - unitKey(right));
+
+  if (action === "PREV") {
+    for (let index = sorted.length - 1; index >= 0; index -= 1) {
+      if (unitKey(sorted[index]) < currentMs) return toPreviewUnit(sorted[index], byWeek);
+    }
+    return toPreviewUnit(sorted[0], byWeek);
+  }
+
+  if (action === "NEXT") {
+    for (const date of sorted) {
+      if (unitKey(date) > currentMs) return toPreviewUnit(date, byWeek);
+    }
+    return toPreviewUnit(sorted[sorted.length - 1], byWeek);
+  }
+
+  const closest = sorted.reduce((best, date) =>
+    Math.abs(unitKey(date) - targetMs) < Math.abs(unitKey(best) - targetMs) ? date : best,
+  );
+  return toPreviewUnit(closest, byWeek);
 };
 
 const dateToIcsTuple = (date: Date): [number, number, number, number, number] => [
@@ -278,8 +363,11 @@ const ExportButtonGroup = ({
 const RecommendationCalendarExport = ({
   result,
   previewWeek,
+  onPreviewWeekChange,
   name,
 }: RecommendationCalendarExportProps) => {
+  const [calendarView, setCalendarView] = useState<View>("week");
+  const [calendarDate, setCalendarDate] = useState(() => getWeekBaseDate(previewWeek));
   const [icsScope, setIcsScope] = useState<DownloadScope>("both");
   const [googleScope, setGoogleScope] = useState<DownloadScope>("both");
   const [icsMenuOpen, setIcsMenuOpen] = useState(false);
@@ -366,12 +454,49 @@ const RecommendationCalendarExport = ({
     };
   }, [googleMenuOpen]);
 
-  const calendarDate = useMemo(() => getWeekBaseDate(previewWeek), [previewWeek]);
+  const previewEvents = useMemo(() => buildExportEvents(result, "both"), [result]);
+  const previewBounds = useMemo(() => buildPreviewBounds(previewEvents), [previewEvents]);
 
-  const previewEvents = useMemo(() => {
-    const recs = previewWeek === "current" ? result.currentWeek : result.nextWeek;
-    return buildCalendarEvents(recs, previewWeek);
-  }, [result, previewWeek]);
+  useEffect(() => {
+    if (calendarView === "agenda") {
+      setCalendarDate(getWeekBaseDate("current"));
+      return;
+    }
+
+    setCalendarDate(getWeekBaseDate(previewWeek));
+  }, [previewWeek, calendarView]);
+
+  const handleCalendarNavigate = useCallback(
+    (newDate: Date, view: View, action?: string) => {
+      if (view === "agenda") {
+        setCalendarDate(newDate);
+        return;
+      }
+
+      const resolved =
+        view === "week"
+          ? clampPreviewDate(previewBounds.weeks, newDate, calendarDate, action, true)
+          : view === "day"
+            ? clampPreviewDate(previewBounds.days, newDate, calendarDate, action, false)
+            : newDate;
+
+      setCalendarDate(resolved);
+
+      const week = getWeekKeyForDate(resolved);
+      if (week && week !== previewWeek) {
+        onPreviewWeekChange(week);
+      }
+    },
+    [calendarDate, onPreviewWeekChange, previewBounds, previewWeek],
+  );
+
+  const handleCalendarViewChange = useCallback((view: View) => {
+    setCalendarView(view);
+
+    if (view === "agenda") {
+      setCalendarDate(getWeekBaseDate("current"));
+    }
+  }, []);
 
   const icsEvents = useMemo(() => buildExportEvents(result, icsScope), [result, icsScope]);
   const googleEvents = useMemo(() => buildExportEvents(result, googleScope), [result, googleScope]);
@@ -617,12 +742,12 @@ const RecommendationCalendarExport = ({
       ) : (
         <div className="recommendation-calendar-shell">
           <Calendar
-            key={previewWeek}
             localizer={localizer}
             events={previewEvents}
-            defaultDate={calendarDate}
-            defaultView="week"
+            date={calendarDate}
+            view={calendarView}
             views={["week", "day", "agenda"]}
+            length={calendarView === "agenda" ? AGENDA_DAY_COUNT : undefined}
             startAccessor="start"
             endAccessor="end"
             titleAccessor="title"
@@ -631,6 +756,8 @@ const RecommendationCalendarExport = ({
             scrollToTime={CALENDAR_PREVIEW_MIN}
             toolbar
             popup
+            onNavigate={handleCalendarNavigate}
+            onView={handleCalendarViewChange}
             components={{
               event: CalendarEventCard,
             }}

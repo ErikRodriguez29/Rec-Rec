@@ -229,6 +229,7 @@ const RecommendationsPanel = ({
               <RecommendationCalendarExport
                 result={activeItem.result}
                 previewWeek={week}
+                onPreviewWeekChange={setWeek}
                 name={activeItem.name}
               />
 
