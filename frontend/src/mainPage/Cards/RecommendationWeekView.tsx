@@ -1,15 +1,6 @@
 import { DAY_ORDER } from "../../constants";
-import type { CategoryRec, OverallRec, WeekRecs } from "../../types";
-
-function getAlternativeTime(recs: WeekRecs, rec: OverallRec): string {
-  const category = recs.categories.find((item) => item.category === rec.category);
-  const day = category?.days.find((item) => item.day === rec.day);
-
-  const times =
-    day?.facilities.flatMap((facility) => facility.times.filter((time) => time !== rec.time)) ?? [];
-
-  return times[0] ?? "";
-}
+import type { CategoryRec, WeekRecs } from "../../types";
+import { getAlternateTime } from "./recommendationSchedule";
 
 function OverallList({ recs }: { recs: WeekRecs }) {
   const orderedRecs = DAY_ORDER.flatMap((day) => recs.overall.filter((rec) => rec.day === day));
@@ -28,7 +19,7 @@ function OverallList({ recs }: { recs: WeekRecs }) {
           <span>Activity / Category</span>
           <span>Facility</span>
           <span>Best Time</span>
-          <span>Alternative Time</span>
+          <span>Alternate Time</span>
         </div>
 
         {orderedRecs.map((rec, index) => (
@@ -40,7 +31,7 @@ function OverallList({ recs }: { recs: WeekRecs }) {
             <span className="rec-activity">{rec.category}</span>
             <span>{rec.facility}</span>
             <time>{rec.time}</time>
-            <time>{getAlternativeTime(recs, rec) || "None"}</time>
+            <time>{getAlternateTime(recs, rec) || "None"}</time>
           </div>
         ))}
       </div>
@@ -93,16 +84,9 @@ function CategoryList({ recs }: { recs: WeekRecs }) {
 
 const RecommendationWeekView = ({ recs }: { recs: WeekRecs }) => {
   return (
-    <div className="recommendations-scroll-shell">
-      <div className="recommendations-content">
-        <OverallList recs={recs} />
-        <CategoryList recs={recs} />
-      </div>
-
-      <div className="scroll-fade" aria-hidden="true" />
-      <div className="scroll-hint" aria-hidden="true">
-        ↓
-      </div>
+    <div className="recommendations-content">
+      <OverallList recs={recs} />
+      <CategoryList recs={recs} />
     </div>
   );
 };

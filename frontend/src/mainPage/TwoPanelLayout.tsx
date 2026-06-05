@@ -118,8 +118,12 @@ const TwoPanelLayout = () => {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <h1>Rec-Rec</h1>
-        <p>UCSB Recreation Center Smart Workout Planner</p>
+        <h1>UCSB Recreation Recommender</h1>
+        <p>Find the best times to go to the gym based on your preferences and schedule.</p>
+        <p>
+          {" "}
+          View on <a href="https://github.com/ErikRodriguez29/rec-rec">GitHub</a>
+        </p>
       </header>
 
       <section className="panel-layout">

@@ -1,9 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Calendar, dateFnsLocalizer, type Event as CalendarEvent } from "react-big-calendar";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
+import {
+  Calendar,
+  dateFnsLocalizer,
+  type Event as CalendarEvent,
+  type View,
+} from "react-big-calendar";
 import { createEvents, type EventAttributes } from "ics";
-import { addDays, format, getDay, parse, startOfWeek } from "date-fns";
+import { addDays, format, getDay, parse, startOfDay, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
-import type { RecommendationResult, WeekRecs } from "../../types";
+import { DAY_CONFIGS } from "../../constants";
+import type { OverallRec, RecommendationResult, WeekRecs } from "../../types";
 import {
   createGoogleCalendar,
   fetchWritableCalendarList,
@@ -13,6 +32,7 @@ import {
   type GoogleCalendarSummary,
 } from "../../api/googleCalendar";
 import { useGoogleCalendarLink } from "../../useGoogleCalendarLink";
+import { getAlternateTime, getFacilityForTime, getScoreForTime } from "./recommendationSchedule";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./RecommendationCalendarExport.css";
 
@@ -25,11 +45,19 @@ const EXPORT_SCOPE_OPTIONS: { value: DownloadScope; label: string }[] = [
   { value: "both", label: "Both weeks" },
 ];
 
+const CALENDAR_PREVIEW_MIN = new Date(1970, 0, 1, 6, 0, 0);
+const CALENDAR_PREVIEW_MAX = new Date(1970, 0, 1, 23, 0, 0);
+
 interface RecommendationCalendarExportProps {
   result: RecommendationResult;
   previewWeek: WeekKey;
+  onPreviewWeekChange: (week: WeekKey) => void;
   name: string;
 }
+
+const AGENDA_DAY_COUNT = 14;
+
+type ChosenTimes = Map<string, string>;
 
 interface RecommendationCalendarEvent extends CalendarEvent {
   title: string;
@@ -41,20 +69,143 @@ interface RecommendationCalendarEvent extends CalendarEvent {
     facility: string;
     day: string;
     time: string;
+    score: number;
+    slotKey: string;
+    bestTime: string;
+    isAlternate: boolean;
   };
 }
 
-const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent }) => {
+const CalendarTimeChoiceContext = createContext<{
+  choosePreferred: (slotKey: string, time: string) => void;
+  chosenTimes: ChosenTimes;
+} | null>(null);
+
+const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent; title?: string }) => {
+  const choice = useContext(CalendarTimeChoiceContext);
+  const titleId = useId();
+  const [open, setOpen] = useState(false);
+  const [popupStyle, setPopupStyle] = useState<CSSProperties>({ top: 0, left: 0 });
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const { activity, facility, time, score, slotKey, bestTime, isAlternate } = event.resource;
+  const preferredTime = choice?.chosenTimes.get(slotKey) ?? bestTime;
+  const isChosen = preferredTime === time;
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      if (!wrapRef.current) return;
+
+      const rect = wrapRef.current.getBoundingClientRect();
+      const popupHeight = popupRef.current?.offsetHeight ?? 0;
+      const gap = 4;
+      const popupWidth = 220;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - popupWidth - 8));
+      let top = rect.top - gap;
+
+      if (popupHeight > 0 && top - popupHeight < 8) {
+        top = popupHeight + 8;
+      }
+
+      setPopupStyle({ top, left });
+    };
+
+    const handleClickOutside = (mouseEvent: MouseEvent) => {
+      const target = mouseEvent.target as Node;
+
+      if (wrapRef.current?.contains(target) || popupRef.current?.contains(target)) {
+        return;
+      }
+
+      setOpen(false);
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  const cardClassName = [
+    "calendar-event-card",
+    isAlternate ? "calendar-event-card--alternate" : "",
+    isChosen ? "calendar-event-card--chosen" : "calendar-event-card--muted",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div
-      className="calendar-event-card"
-      title={`${event.resource.activity} at ${event.resource.facility}`}
-    >
-      <span className="calendar-event-title">{event.resource.activity}</span>
-      <span className="calendar-event-facility">{event.resource.facility}</span>
+    <div className="calendar-event-card-wrap" ref={wrapRef}>
+      <button
+        className={cardClassName}
+        type="button"
+        onClick={(clickEvent) => {
+          clickEvent.stopPropagation();
+          setOpen((current) => !current);
+        }}
+      >
+        <span className="calendar-event-title">{activity}</span>
+        <span className="calendar-event-facility">{facility}</span>
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            ref={popupRef}
+            className="calendar-event-detail-popup"
+            role="dialog"
+            style={popupStyle}
+            aria-labelledby={titleId}
+          >
+            <p className="calendar-event-detail-title" id={titleId}>
+              {isAlternate ? "Alternate time" : "Best time"}
+            </p>
+            <dl className="calendar-event-detail-list">
+              <div>
+                <dt>Activity / category</dt>
+                <dd>{activity}</dd>
+              </div>
+              <div>
+                <dt>Facility</dt>
+                <dd>{facility}</dd>
+              </div>
+              <div>
+                <dt>Time of day</dt>
+                <dd>{time}</dd>
+              </div>
+              <div>
+                <dt>Score</dt>
+                <dd>{score.toFixed(1)}</dd>
+              </div>
+            </dl>
+            {!isChosen && choice && (
+              <button
+                className="calendar-event-detail-action"
+                type="button"
+                onClick={() => {
+                  choice.choosePreferred(slotKey, time);
+                  setOpen(false);
+                }}
+              >
+                Choose this time
+              </button>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
+
+const weekStartOptions = { weekStartsOn: 1 as const };
 
 const locales = {
   "en-US": enUS,
@@ -63,39 +214,18 @@ const locales = {
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
+  startOfWeek: (date: Date) => startOfWeek(date, weekStartOptions),
   getDay,
   locales,
 });
 
-const dayOffsetByValue: Record<string, number> = {
-  U: 0,
-  SUNDAY: 0,
-  SUN: 0,
-
-  M: 1,
-  MONDAY: 1,
-  MON: 1,
-
-  T: 2,
-  TUESDAY: 2,
-  TUE: 2,
-
-  W: 3,
-  WEDNESDAY: 3,
-  WED: 3,
-
-  R: 4,
-  THURSDAY: 4,
-  THU: 4,
-
-  F: 5,
-  FRIDAY: 5,
-  FRI: 5,
-
-  SATURDAY: 6,
-  SAT: 6,
-};
+const dayOffsetByValue: Record<string, number> = Object.fromEntries(
+  DAY_CONFIGS.flatMap(({ code, name }, index) => [
+    [code, index],
+    [name.toUpperCase(), index],
+    [name.slice(0, 3).toUpperCase(), index],
+  ]),
+);
 
 const getDayOffset = (day: string) => {
   return dayOffsetByValue[day.trim().toUpperCase()] ?? null;
@@ -142,10 +272,87 @@ const normalizeTime = (time: string) => {
 };
 
 const getWeekBaseDate = (week: WeekKey) => {
-  const currentSunday = startOfWeek(new Date(), { weekStartsOn: 0 });
-  currentSunday.setHours(0, 0, 0, 0);
+  const weekStart = startOfWeek(new Date(), weekStartOptions);
+  weekStart.setHours(0, 0, 0, 0);
 
-  return week === "current" ? currentSunday : addDays(currentSunday, 7);
+  return week === "current" ? weekStart : addDays(weekStart, 7);
+};
+
+const getWeekKeyForDate = (date: Date): WeekKey | null => {
+  const weekStart = startOfWeek(date, weekStartOptions);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const currentStart = getWeekBaseDate("current");
+  const nextStart = getWeekBaseDate("next");
+
+  if (weekStart.getTime() === currentStart.getTime()) return "current";
+  if (weekStart.getTime() === nextStart.getTime()) return "next";
+
+  return null;
+};
+
+const toPreviewUnit = (date: Date, byWeek: boolean) => {
+  const unit = byWeek ? startOfWeek(date, weekStartOptions) : startOfDay(date);
+  unit.setHours(0, 0, 0, 0);
+  return unit;
+};
+
+const buildPreviewBounds = (events: RecommendationCalendarEvent[]) => {
+  const days = new Map<number, Date>();
+  const weeks = new Map<number, Date>();
+
+  for (const event of events) {
+    const day = startOfDay(event.start);
+    days.set(day.getTime(), day);
+
+    const week = startOfWeek(event.start, weekStartOptions);
+    week.setHours(0, 0, 0, 0);
+    weeks.set(week.getTime(), week);
+  }
+
+  const sortDates = (entries: Map<number, Date>) =>
+    [...entries.values()].sort((left, right) => left.getTime() - right.getTime());
+
+  return { days: sortDates(days), weeks: sortDates(weeks) };
+};
+
+const clampPreviewDate = (
+  allowed: Date[],
+  newDate: Date,
+  currentDate: Date,
+  action: string | undefined,
+  byWeek: boolean,
+) => {
+  if (allowed.length === 0) return newDate;
+
+  const unitKey = (date: Date) => toPreviewUnit(date, byWeek).getTime();
+  const targetMs = unitKey(newDate);
+
+  if (allowed.some((date) => unitKey(date) === targetMs)) {
+    return toPreviewUnit(newDate, byWeek);
+  }
+
+  const currentMs = unitKey(currentDate);
+  const sorted = [...allowed].sort((left, right) => unitKey(left) - unitKey(right));
+
+  if (action === "PREV") {
+    for (let index = sorted.length - 1; index >= 0; index -= 1) {
+      if (unitKey(sorted[index]) < currentMs) return toPreviewUnit(sorted[index], byWeek);
+    }
+    return toPreviewUnit(sorted[0], byWeek);
+  }
+
+  if (action === "NEXT") {
+    for (const date of sorted) {
+      if (unitKey(date) > currentMs) return toPreviewUnit(date, byWeek);
+    }
+    return toPreviewUnit(sorted[sorted.length - 1], byWeek);
+  }
+
+  const closest = sorted.reduce((best, date) =>
+    Math.abs(unitKey(date) - targetMs) < Math.abs(unitKey(best) - targetMs) ? date : best,
+  );
+  return toPreviewUnit(closest, byWeek);
 };
 
 const dateToIcsTuple = (date: Date): [number, number, number, number, number] => [
@@ -156,61 +363,93 @@ const dateToIcsTuple = (date: Date): [number, number, number, number, number] =>
   date.getMinutes(),
 ];
 
-const buildCalendarEvents = (recs: WeekRecs, week: WeekKey): RecommendationCalendarEvent[] => {
+const getSlotKey = (week: WeekKey, rec: OverallRec) =>
+  `${week}:${rec.day}:${rec.category}:${rec.facility}`;
+
+const buildEventFromRec = (
+  rec: OverallRec,
+  week: WeekKey,
+  recs: WeekRecs,
+  time: string,
+): RecommendationCalendarEvent | null => {
   const baseDate = getWeekBaseDate(week);
+  const day = rec.day || getRecString(rec, ["day"]);
+  const activity = getRecString(rec, [
+    "activity",
+    "category",
+    "activityOrCategory",
+    "activity_or_category",
+  ]);
+  const facility = getFacilityForTime(recs, rec, time);
+  const dayOffset = getDayOffset(day);
 
-  return recs.overall
-    .map((rec) => {
-      const day = getRecString(rec, ["day"]);
-      const activity = getRecString(rec, [
-        "activity",
-        "category",
-        "activityOrCategory",
-        "activity_or_category",
-      ]);
-      const facility = getRecString(rec, ["facility", "facilityName", "facility_name"]);
-      const time = getRecString(rec, ["bestTime", "best_time", "time", "timeOfDay", "time_of_day"]);
-
-      const dayOffset = getDayOffset(day);
-
-      if (dayOffset === null || !time) {
-        return null;
-      }
-
-      const { hour, minute } = normalizeTime(time);
-
-      const start = addDays(baseDate, dayOffset);
-      start.setHours(hour, minute, 0, 0);
-
-      const end = new Date(start);
-      end.setHours(start.getHours() + 1);
-
-      return {
-        title: `${activity || "Activity"} — ${facility || "Facility"}`,
-        start,
-        end,
-        allDay: false,
-        resource: {
-          activity: activity || "Activity",
-          facility: facility || "Facility",
-          day,
-          time,
-        },
-      };
-    })
-    .filter((event): event is RecommendationCalendarEvent => event !== null);
-};
-
-const buildExportEvents = (result: RecommendationResult, scope: DownloadScope) => {
-  if (scope === "both") {
-    return [
-      ...buildCalendarEvents(result.currentWeek, "current"),
-      ...buildCalendarEvents(result.nextWeek, "next"),
-    ];
+  if (dayOffset === null || !time) {
+    return null;
   }
 
-  const recs = scope === "current" ? result.currentWeek : result.nextWeek;
-  return buildCalendarEvents(recs, scope);
+  const { hour, minute } = normalizeTime(time);
+  const start = addDays(baseDate, dayOffset);
+  start.setHours(hour, minute, 0, 0);
+
+  const end = new Date(start);
+  end.setHours(start.getHours() + 1);
+
+  return {
+    title: `${activity || rec.category || "Activity"} — ${facility}`,
+    start,
+    end,
+    allDay: false,
+    resource: {
+      activity: activity || rec.category || "Activity",
+      facility,
+      day,
+      time,
+      score: getScoreForTime(recs, rec, time),
+      slotKey: getSlotKey(week, rec),
+      bestTime: rec.time,
+      isAlternate: time !== rec.time,
+    },
+  };
+};
+
+const buildWeekPreviewEvents = (recs: WeekRecs, week: WeekKey) => {
+  const events: RecommendationCalendarEvent[] = [];
+
+  for (const rec of recs.overall) {
+    const bestEvent = buildEventFromRec(rec, week, recs, rec.time);
+    if (bestEvent) events.push(bestEvent);
+
+    const alternateTime = getAlternateTime(recs, rec);
+    if (alternateTime) {
+      const alternateEvent = buildEventFromRec(rec, week, recs, alternateTime);
+      if (alternateEvent) events.push(alternateEvent);
+    }
+  }
+
+  return events;
+};
+
+const buildCalendarPreviewEvents = (result: RecommendationResult) => [
+  ...buildWeekPreviewEvents(result.currentWeek, "current"),
+  ...buildWeekPreviewEvents(result.nextWeek, "next"),
+];
+
+const buildCalendarExportEvents = (
+  result: RecommendationResult,
+  scope: DownloadScope,
+  chosenTimes: ChosenTimes,
+) => {
+  const weeks: WeekKey[] = scope === "both" ? ["current", "next"] : [scope];
+
+  return weeks.flatMap((week) => {
+    const recs = week === "current" ? result.currentWeek : result.nextWeek;
+
+    return recs.overall.flatMap((rec) => {
+      const time = chosenTimes.get(getSlotKey(week, rec)) ?? rec.time;
+      const event = buildEventFromRec(rec, week, recs, time);
+      return event ? [event] : [];
+    });
+  });
 };
 
 const downloadTextFile = (filename: string, content: string) => {
@@ -293,8 +532,11 @@ const ExportButtonGroup = ({
 const RecommendationCalendarExport = ({
   result,
   previewWeek,
+  onPreviewWeekChange,
   name,
 }: RecommendationCalendarExportProps) => {
+  const [calendarView, setCalendarView] = useState<View>("week");
+  const [calendarDate, setCalendarDate] = useState(() => getWeekBaseDate(previewWeek));
   const [icsScope, setIcsScope] = useState<DownloadScope>("both");
   const [googleScope, setGoogleScope] = useState<DownloadScope>("both");
   const [icsMenuOpen, setIcsMenuOpen] = useState(false);
@@ -307,6 +549,7 @@ const RecommendationCalendarExport = ({
   const [creatingCalendar, setCreatingCalendar] = useState(false);
   const [showNewCalendar, setShowNewCalendar] = useState(false);
   const [newCalendarName, setNewCalendarName] = useState("");
+  const [chosenTimes, setChosenTimes] = useState<ChosenTimes>(() => new Map());
   const {
     linked: googleLinked,
     loading: linkingGoogle,
@@ -381,15 +624,79 @@ const RecommendationCalendarExport = ({
     };
   }, [googleMenuOpen]);
 
-  const calendarDate = useMemo(() => getWeekBaseDate(previewWeek), [previewWeek]);
+  const allPreviewEvents = useMemo(() => buildCalendarPreviewEvents(result), [result]);
+  const hasAlternates = useMemo(
+    () => allPreviewEvents.some((event) => event.resource.isAlternate),
+    [allPreviewEvents],
+  );
 
-  const previewEvents = useMemo(() => {
-    const recs = previewWeek === "current" ? result.currentWeek : result.nextWeek;
-    return buildCalendarEvents(recs, previewWeek);
-  }, [result, previewWeek]);
+  const calendarEvents = useMemo(() => {
+    if (calendarView === "agenda") {
+      return buildCalendarExportEvents(result, "both", chosenTimes);
+    }
 
-  const icsEvents = useMemo(() => buildExportEvents(result, icsScope), [result, icsScope]);
-  const googleEvents = useMemo(() => buildExportEvents(result, googleScope), [result, googleScope]);
+    return allPreviewEvents;
+  }, [allPreviewEvents, calendarView, chosenTimes, result]);
+
+  const previewBounds = useMemo(() => buildPreviewBounds(calendarEvents), [calendarEvents]);
+
+  const choosePreferred = useCallback((slotKey: string, time: string) => {
+    setChosenTimes((current) => new Map(current).set(slotKey, time));
+  }, []);
+
+  useEffect(() => {
+    setChosenTimes(new Map());
+  }, [result]);
+
+  useEffect(() => {
+    if (calendarView === "agenda") {
+      setCalendarDate(getWeekBaseDate("current"));
+      return;
+    }
+
+    setCalendarDate(getWeekBaseDate(previewWeek));
+  }, [previewWeek, calendarView]);
+
+  const handleCalendarNavigate = useCallback(
+    (newDate: Date, view: View, action?: string) => {
+      if (view === "agenda") {
+        setCalendarDate(newDate);
+        return;
+      }
+
+      const resolved =
+        view === "week"
+          ? clampPreviewDate(previewBounds.weeks, newDate, calendarDate, action, true)
+          : view === "day"
+            ? clampPreviewDate(previewBounds.days, newDate, calendarDate, action, false)
+            : newDate;
+
+      setCalendarDate(resolved);
+
+      const week = getWeekKeyForDate(resolved);
+      if (week && week !== previewWeek) {
+        onPreviewWeekChange(week);
+      }
+    },
+    [calendarDate, onPreviewWeekChange, previewBounds, previewWeek],
+  );
+
+  const handleCalendarViewChange = useCallback((view: View) => {
+    setCalendarView(view);
+
+    if (view === "agenda") {
+      setCalendarDate(getWeekBaseDate("current"));
+    }
+  }, []);
+
+  const icsEvents = useMemo(
+    () => buildCalendarExportEvents(result, icsScope, chosenTimes),
+    [result, icsScope, chosenTimes],
+  );
+  const googleEvents = useMemo(
+    () => buildCalendarExportEvents(result, googleScope, chosenTimes),
+    [result, googleScope, chosenTimes],
+  );
 
   const handleDownloadIcs = () => {
     const events: EventAttributes[] = icsEvents.map((event) => ({
@@ -624,31 +931,52 @@ const RecommendationCalendarExport = ({
         </div>
       </div>
 
-      {previewEvents.length === 0 ? (
+      {allPreviewEvents.length === 0 ? (
         <div className="recommendation-calendar-empty">
           <h4>No calendar events found</h4>
           <p>The planner did not return readable day/time recommendations.</p>
         </div>
       ) : (
-        <div className="recommendation-calendar-shell">
-          <Calendar
-            key={previewWeek}
-            localizer={localizer}
-            events={previewEvents}
-            defaultDate={calendarDate}
-            defaultView="week"
-            views={["week", "day", "agenda"]}
-            startAccessor="start"
-            endAccessor="end"
-            titleAccessor="title"
-            toolbar
-            popup
-            components={{
-              event: CalendarEventCard,
-            }}
-            style={{ height: 520 }}
-          />
-        </div>
+        <>
+          {calendarView !== "agenda" && hasAlternates && (
+            <div className="calendar-event-legend" aria-label="Calendar event types">
+              <span>
+                <i className="calendar-event-legend-swatch calendar-event-legend-swatch--best" />
+                Best time
+              </span>
+              <span>
+                <i className="calendar-event-legend-swatch calendar-event-legend-swatch--alternate" />
+                Alternate time
+              </span>
+            </div>
+          )}
+
+          <div className="recommendation-calendar-shell">
+            <CalendarTimeChoiceContext.Provider value={{ chosenTimes, choosePreferred }}>
+              <Calendar
+                localizer={localizer}
+                events={calendarEvents}
+                date={calendarDate}
+                view={calendarView}
+                views={["week", "day", "agenda"]}
+                length={calendarView === "agenda" ? AGENDA_DAY_COUNT : undefined}
+                startAccessor="start"
+                endAccessor="end"
+                titleAccessor="title"
+                min={CALENDAR_PREVIEW_MIN}
+                max={CALENDAR_PREVIEW_MAX}
+                scrollToTime={CALENDAR_PREVIEW_MIN}
+                toolbar
+                popup
+                onNavigate={handleCalendarNavigate}
+                onView={handleCalendarViewChange}
+                components={{
+                  event: CalendarEventCard,
+                }}
+              />
+            </CalendarTimeChoiceContext.Provider>
+          </div>
+        </>
       )}
     </section>
   );

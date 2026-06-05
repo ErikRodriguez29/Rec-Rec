@@ -219,7 +219,7 @@ const RecommendationsPanel = ({
               </div>
 
               <p className="recommendation-card-copy">
-                Preview the schedule below, then download it as an .ics calendar file.
+                Preview the schedule below, then download it or add it to your Google Calendar.
               </p>
             </article>
           </div>
@@ -229,6 +229,7 @@ const RecommendationsPanel = ({
               <RecommendationCalendarExport
                 result={activeItem.result}
                 previewWeek={week}
+                onPreviewWeekChange={setWeek}
                 name={activeItem.name}
               />
 
