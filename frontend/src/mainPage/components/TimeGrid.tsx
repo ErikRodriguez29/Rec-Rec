@@ -93,7 +93,7 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
         </div>
         <div className="legend">
           <span>
-            <i className="swatch swatch--preferred" /> Free
+            <i className="swatch swatch--preferred" /> Preferred
           </span>
           <span>
             <i className="swatch swatch--unavailable" /> Busy

@@ -219,7 +219,7 @@ const RecommendationsPanel = ({
               </div>
 
               <p className="recommendation-card-copy">
-                Preview the schedule below, then download it as an .ics calendar file.
+                Preview the schedule below, then download it or add it to your Google Calendar.
               </p>
             </article>
           </div>

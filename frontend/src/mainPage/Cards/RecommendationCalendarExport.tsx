@@ -1,4 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -9,7 +20,7 @@ import { createEvents, type EventAttributes } from "ics";
 import { addDays, format, getDay, parse, startOfDay, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
 import { DAY_CONFIGS } from "../../constants";
-import type { RecommendationResult, WeekRecs } from "../../types";
+import type { OverallRec, RecommendationResult, WeekRecs } from "../../types";
 import {
   createGoogleCalendar,
   fetchWritableCalendarList,
@@ -53,17 +64,107 @@ interface RecommendationCalendarEvent extends CalendarEvent {
     facility: string;
     day: string;
     time: string;
+    score: number;
   };
 }
 
-const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent }) => {
+const CalendarEventCard = ({ event }: { event: RecommendationCalendarEvent; title?: string }) => {
+  const titleId = useId();
+  const [open, setOpen] = useState(false);
+  const [popupStyle, setPopupStyle] = useState<CSSProperties>({ top: 0, left: 0 });
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const { activity, facility, time, score } = event.resource;
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      if (!wrapRef.current) return;
+
+      const rect = wrapRef.current.getBoundingClientRect();
+      const popupHeight = popupRef.current?.offsetHeight ?? 0;
+      const gap = 4;
+      const popupWidth = 220;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - popupWidth - 8));
+      let top = rect.top - gap;
+
+      if (popupHeight > 0 && top - popupHeight < 8) {
+        top = popupHeight + 8;
+      }
+
+      setPopupStyle({ top, left });
+    };
+
+    const handleClickOutside = (mouseEvent: MouseEvent) => {
+      const target = mouseEvent.target as Node;
+
+      if (wrapRef.current?.contains(target) || popupRef.current?.contains(target)) {
+        return;
+      }
+
+      setOpen(false);
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
   return (
-    <div
-      className="calendar-event-card"
-      title={`${event.resource.activity} at ${event.resource.facility}`}
-    >
-      <span className="calendar-event-title">{event.resource.activity}</span>
-      <span className="calendar-event-facility">{event.resource.facility}</span>
+    <div className="calendar-event-card-wrap" ref={wrapRef}>
+      <button
+        className="calendar-event-card"
+        type="button"
+        onClick={(clickEvent) => {
+          clickEvent.stopPropagation();
+          setOpen((current) => !current);
+        }}
+      >
+        <span className="calendar-event-title">{activity}</span>
+        <span className="calendar-event-facility">{facility}</span>
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            ref={popupRef}
+            className="calendar-event-detail-popup"
+            role="dialog"
+            style={popupStyle}
+            aria-labelledby={titleId}
+          >
+            <p className="calendar-event-detail-title" id={titleId}>
+              Best time
+            </p>
+            <dl className="calendar-event-detail-list">
+              <div>
+                <dt>Activity / category</dt>
+                <dd>{activity}</dd>
+              </div>
+              <div>
+                <dt>Facility</dt>
+                <dd>{facility}</dd>
+              </div>
+              <div>
+                <dt>Time of day</dt>
+                <dd>{time}</dd>
+              </div>
+              <div>
+                <dt>Score</dt>
+                <dd>{score.toFixed(1)}</dd>
+              </div>
+            </dl>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
@@ -230,16 +331,19 @@ const buildCalendarEvents = (recs: WeekRecs, week: WeekKey): RecommendationCalen
   const baseDate = getWeekBaseDate(week);
 
   return recs.overall
-    .map((rec) => {
-      const day = getRecString(rec, ["day"]);
+    .map((rec: OverallRec) => {
+      const day = rec.day || getRecString(rec, ["day"]);
       const activity = getRecString(rec, [
         "activity",
         "category",
         "activityOrCategory",
         "activity_or_category",
       ]);
-      const facility = getRecString(rec, ["facility", "facilityName", "facility_name"]);
-      const time = getRecString(rec, ["bestTime", "best_time", "time", "timeOfDay", "time_of_day"]);
+      const facility =
+        rec.facility || getRecString(rec, ["facility", "facilityName", "facility_name"]);
+      const time =
+        rec.time ||
+        getRecString(rec, ["bestTime", "best_time", "time", "timeOfDay", "time_of_day"]);
 
       const dayOffset = getDayOffset(day);
 
@@ -261,10 +365,11 @@ const buildCalendarEvents = (recs: WeekRecs, week: WeekKey): RecommendationCalen
         end,
         allDay: false,
         resource: {
-          activity: activity || "Activity",
+          activity: activity || rec.category || "Activity",
           facility: facility || "Facility",
           day,
           time,
+          score: rec.score,
         },
       };
     })
