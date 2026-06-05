@@ -25,6 +25,9 @@ const EXPORT_SCOPE_OPTIONS: { value: DownloadScope; label: string }[] = [
   { value: "both", label: "Both weeks" },
 ];
 
+const CALENDAR_PREVIEW_MIN = new Date(1970, 0, 1, 6, 0, 0);
+const CALENDAR_PREVIEW_MAX = new Date(1970, 0, 1, 23, 0, 0);
+
 interface RecommendationCalendarExportProps {
   result: RecommendationResult;
   previewWeek: WeekKey;
@@ -641,12 +644,14 @@ const RecommendationCalendarExport = ({
             startAccessor="start"
             endAccessor="end"
             titleAccessor="title"
+            min={CALENDAR_PREVIEW_MIN}
+            max={CALENDAR_PREVIEW_MAX}
+            scrollToTime={CALENDAR_PREVIEW_MIN}
             toolbar
             popup
             components={{
               event: CalendarEventCard,
             }}
-            style={{ height: 520 }}
           />
         </div>
       )}

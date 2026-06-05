@@ -93,16 +93,9 @@ function CategoryList({ recs }: { recs: WeekRecs }) {
 
 const RecommendationWeekView = ({ recs }: { recs: WeekRecs }) => {
   return (
-    <div className="recommendations-scroll-shell">
-      <div className="recommendations-content">
-        <OverallList recs={recs} />
-        <CategoryList recs={recs} />
-      </div>
-
-      <div className="scroll-fade" aria-hidden="true" />
-      <div className="scroll-hint" aria-hidden="true">
-        ↓
-      </div>
+    <div className="recommendations-content">
+      <OverallList recs={recs} />
+      <CategoryList recs={recs} />
     </div>
   );
 };
