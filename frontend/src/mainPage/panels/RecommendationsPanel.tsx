@@ -46,9 +46,12 @@ const RecommendationsPanel = ({
   const activeRecs =
     week === "current" ? activeItem?.result.currentWeek : activeItem?.result.nextWeek;
 
+  const dismissError = () => onDismissError?.();
+
   const changeCardWithSlide = (nextIndex: number, direction: "next" | "prev") => {
     if (history.length <= 1 || slideDirection || shuffling) return;
 
+    dismissError();
     setSlideDirection(direction);
 
     window.setTimeout(() => {
@@ -77,6 +80,7 @@ const RecommendationsPanel = ({
   const handleShuffle = () => {
     if (history.length <= 1 || shuffling || slideDirection) return;
 
+    dismissError();
     setShuffling(true);
 
     window.setTimeout(() => {
@@ -102,7 +106,7 @@ const RecommendationsPanel = ({
   };
 
   const handleReturnToPreviousCards = () => {
-    onDismissError?.();
+    dismissError();
 
     if (history.length > 0) {
       onActiveIndexChange(Math.min(activeIndex, history.length - 1));
