@@ -143,6 +143,7 @@ const TwoPanelLayout = () => {
                 onColorChange={handleColorRecommendation}
                 onDelete={handleDeleteRecommendation}
                 onRename={handleRenameRecommendation}
+                onDismissError={() => setError(null)}
               />
             }
           />
