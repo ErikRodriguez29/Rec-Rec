@@ -1,4 +1,28 @@
-import type { OverallRec, WeekRecs } from "../../types";
+import type { OverallRec, RecommendationResult, WeekRecs } from "../../types";
+
+export type ChosenTimes = Map<string, string>;
+export type WeekKey = "current" | "next";
+
+export const getSlotKey = (week: WeekKey, rec: OverallRec) =>
+  `${week}:${rec.day}:${rec.category}:${rec.facility}`;
+
+export function collectRecommendedFacilities(
+  result: RecommendationResult,
+  chosenTimes: ChosenTimes,
+): ReadonlySet<string> {
+  const names = new Set<string>();
+
+  for (const week of ["current", "next"] as const) {
+    const recs = week === "current" ? result.currentWeek : result.nextWeek;
+
+    for (const rec of recs.overall) {
+      const time = chosenTimes.get(getSlotKey(week, rec)) ?? rec.time;
+      names.add(getFacilityForTime(recs, rec, time));
+    }
+  }
+
+  return names;
+}
 
 function getCategoryDay(recs: WeekRecs, rec: OverallRec) {
   const category = recs.categories.find((item) => item.category === rec.category);
