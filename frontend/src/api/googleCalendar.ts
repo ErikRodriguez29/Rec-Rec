@@ -4,7 +4,9 @@ const GOOGLE_CALENDAR_ACCESS_SCOPE =
   "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar";
 
 const GOOGLE_CALENDAR_TOKEN_KEY = "rec-rec-google-calendar-token";
+const GOOGLE_CALENDAR_TOKEN_EXPIRES_KEY = "rec-rec-google-calendar-token-expires";
 export const GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT = "rec-rec-google-calendar-token-change";
+const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 
 export function getGoogleCalendarAccessToken(): string | null {
   return sessionStorage.getItem(GOOGLE_CALENDAR_TOKEN_KEY);
@@ -16,11 +18,22 @@ export function isGoogleCalendarLinked(): boolean {
 
 export function clearGoogleCalendarLink(): void {
   sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);
+  sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_EXPIRES_KEY);
   window.dispatchEvent(new Event(GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT));
 }
 
-function persistGoogleCalendarAccessToken(token: string): void {
-  sessionStorage.setItem(GOOGLE_CALENDAR_TOKEN_KEY, token);
+function isAccessTokenValid(): boolean {
+  const expiresAt = Number(sessionStorage.getItem(GOOGLE_CALENDAR_TOKEN_EXPIRES_KEY));
+  if (!Number.isFinite(expiresAt)) return false;
+  return Date.now() < expiresAt - TOKEN_EXPIRY_BUFFER_MS;
+}
+
+function persistGoogleCalendarAccessToken(accessToken: string, expiresInSeconds: number): void {
+  sessionStorage.setItem(GOOGLE_CALENDAR_TOKEN_KEY, accessToken);
+  sessionStorage.setItem(
+    GOOGLE_CALENDAR_TOKEN_EXPIRES_KEY,
+    String(Date.now() + expiresInSeconds * 1000),
+  );
   window.dispatchEvent(new Event(GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT));
 }
 
@@ -32,10 +45,14 @@ declare global {
           initTokenClient: (config: {
             client_id: string;
             scope: string;
-            callback: (response: { access_token?: string; error?: string }) => void;
+            callback: (response: {
+              access_token?: string;
+              expires_in?: number;
+              error?: string;
+            }) => void;
             error_callback?: (error: { type?: string }) => void;
           }) => {
-            requestAccessToken: () => void;
+            requestAccessToken: (overrideConfig?: { prompt?: string }) => void;
           };
         };
       };
@@ -64,7 +81,10 @@ function dayToCode(date: Date): DayCode {
   return codes[date.getDay()];
 }
 
-function requestGoogleCalendarTokenWithScope(scope: string): Promise<string> {
+function requestGoogleCalendarTokenWithScope(
+  scope: string,
+  options: { prompt?: string } = {},
+): Promise<string> {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   if (!clientId) {
@@ -95,6 +115,7 @@ function requestGoogleCalendarTokenWithScope(scope: string): Promise<string> {
           return;
         }
 
+        persistGoogleCalendarAccessToken(accessToken, response.expires_in ?? 3600);
         finish(() => resolve(accessToken));
       },
       error_callback: (error) => {
@@ -102,14 +123,25 @@ function requestGoogleCalendarTokenWithScope(scope: string): Promise<string> {
       },
     });
 
-    tokenClient.requestAccessToken();
+    tokenClient.requestAccessToken(options);
   });
 }
 
+async function resolveAccessToken(): Promise<string> {
+  const token = getGoogleCalendarAccessToken();
+  if (!token) {
+    throw new Error("Link Google Calendar first.");
+  }
+
+  if (isAccessTokenValid()) {
+    return token;
+  }
+
+  return requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_ACCESS_SCOPE, { prompt: "" });
+}
+
 export async function linkGoogleCalendar(): Promise<string> {
-  const token = await requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_ACCESS_SCOPE);
-  persistGoogleCalendarAccessToken(token);
-  return token;
+  return requestGoogleCalendarTokenWithScope(GOOGLE_CALENDAR_ACCESS_SCOPE);
 }
 
 export function requireGoogleCalendarAccessToken(): string {
@@ -141,6 +173,7 @@ export async function insertGoogleCalendarEvents(
   events: readonly GoogleCalendarExportEvent[],
   calendarId = "primary",
 ): Promise<number> {
+  const token = isAccessTokenValid() ? accessToken : await resolveAccessToken();
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   let created = 0;
 
@@ -150,7 +183,7 @@ export async function insertGoogleCalendarEvents(
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -267,6 +300,7 @@ async function fetchCalendarListPages(
   accessToken: string,
   minAccessRole: "reader" | "writer",
 ): Promise<GoogleCalendarSummary[]> {
+  const token = isAccessTokenValid() ? accessToken : await resolveAccessToken();
   const calendars: GoogleCalendarSummary[] = [];
   let pageToken: string | undefined;
   let done = false;
@@ -280,7 +314,7 @@ async function fetchCalendarListPages(
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
     const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
@@ -337,10 +371,11 @@ export async function createGoogleCalendar(
   accessToken: string,
   summary: string,
 ): Promise<GoogleCalendarSummary> {
+  const token = isAccessTokenValid() ? accessToken : await resolveAccessToken();
   const response = await fetch("https://www.googleapis.com/calendar/v3/calendars", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ summary }),
@@ -374,6 +409,7 @@ async function fetchPickableEventsOneCalendar(params: {
   responseTimeZone: string;
   includeTransparent: boolean;
 }): Promise<CalendarPickableEvent[]> {
+  const token = isAccessTokenValid() ? params.accessToken : await resolveAccessToken();
   const base = new URL(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(params.calendarId)}/events`,
   );
@@ -393,7 +429,7 @@ async function fetchPickableEventsOneCalendar(params: {
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
     const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${params.accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
