@@ -27,6 +27,7 @@ import {
   createGoogleCalendar,
   fetchWritableCalendarList,
   getGoogleCalendarAccessToken,
+  GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT,
   insertGoogleCalendarEvents,
   requireGoogleCalendarAccessToken,
   type GoogleCalendarSummary,
@@ -569,6 +570,7 @@ const RecommendationCalendarExport = ({
     try {
       const list = await fetchWritableCalendarList(token);
       setGoogleCalendars(list);
+      setCalendarError(null);
 
       setSelectedCalendarId((current) => {
         if (list.some((calendar) => calendar.id === current)) return current;
@@ -586,6 +588,20 @@ const RecommendationCalendarExport = ({
     if (!googleLinked) return;
 
     void loadGoogleCalendars();
+  }, [googleLinked, loadGoogleCalendars]);
+
+  useEffect(() => {
+    if (!googleLinked) return;
+
+    const reloadCalendars = () => {
+      void loadGoogleCalendars();
+    };
+
+    window.addEventListener(GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT, reloadCalendars);
+
+    return () => {
+      window.removeEventListener(GOOGLE_CALENDAR_TOKEN_CHANGE_EVENT, reloadCalendars);
+    };
   }, [googleLinked, loadGoogleCalendars]);
 
   useEffect(() => {
@@ -745,6 +761,7 @@ const RecommendationCalendarExport = ({
       setSelectedCalendarId(created.id);
       setNewCalendarName("");
       setShowNewCalendar(false);
+      setCalendarError(null);
     } catch (error) {
       setCalendarError(
         error instanceof Error ? error.message : "Could not create Google Calendar.",
@@ -792,6 +809,7 @@ const RecommendationCalendarExport = ({
       setGoogleExportSuccess(
         `Successfully added ${created} event${created === 1 ? "" : "s"} to ${calendarLabel}.`,
       );
+      setCalendarError(null);
     } catch (error) {
       setCalendarError(
         error instanceof Error ? error.message : "Could not add events to Google Calendar.",
