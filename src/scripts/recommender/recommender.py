@@ -112,8 +112,6 @@ def recommend_times(
         next_week_forecast, preferred_facilities_hard_filter, week="next"
     )
 
-    # print(f"Current week forecast: {current_week_forecast}")
-    # print(f"Next week forecast: {next_week_forecast}")
     save_data(
         current_week_forecast, next_week_forecast, current_week_number, next_week_number
     )
