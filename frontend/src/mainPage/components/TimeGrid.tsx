@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import { DAY_CONFIGS } from "../../constants";
 import type { SlotState } from "../../types";
 
@@ -19,8 +19,14 @@ function toLabel(hour: number): string {
   return `${hour - 12}p`;
 }
 
+function slotFromPointerTarget(target: EventTarget | null): string | null {
+  const cell = (target as Element | null)?.closest<HTMLButtonElement>("[data-slot]");
+  return cell?.dataset.slot ?? null;
+}
+
 const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
   const [mode, setMode] = useState<SlotState>("preferred");
+  const gridRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ active: false, removing: false, dragMode: "preferred" as SlotState });
   const pendingRef = useRef(new Map<string, SlotState>());
   const latestRef = useRef(slots);
@@ -29,16 +35,7 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
     latestRef.current = slots;
   }, [slots]);
 
-  useEffect(() => {
-    const stopDrag = () => {
-      dragRef.current.active = false;
-    };
-
-    window.addEventListener("mouseup", stopDrag);
-    return () => window.removeEventListener("mouseup", stopDrag);
-  }, []);
-
-  const handleMouseDown = (slot: string) => {
+  const beginDrag = (slot: string) => {
     const currentState = latestRef.current.get(slot);
     if (currentState && currentState !== mode) return;
 
@@ -55,7 +52,7 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
     onChange(new Map(pendingRef.current));
   };
 
-  const handleMouseEnter = (slot: string) => {
+  const paintSlot = (slot: string) => {
     if (!dragRef.current.active) return;
 
     const { dragMode, removing } = dragRef.current;
@@ -70,6 +67,27 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
     }
 
     onChange(new Map(pendingRef.current));
+  };
+
+  const endDrag = (event: PointerEvent<HTMLDivElement>) => {
+    dragRef.current.active = false;
+
+    if (gridRef.current?.hasPointerCapture(event.pointerId)) {
+      gridRef.current.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const handleCellPointerDown = (event: PointerEvent<HTMLButtonElement>, slot: string) => {
+    event.preventDefault();
+    gridRef.current?.setPointerCapture(event.pointerId);
+    beginDrag(slot);
+  };
+
+  const handleGridPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+
+    const slot = slotFromPointerTarget(document.elementFromPoint(event.clientX, event.clientY));
+    if (slot) paintSlot(slot);
   };
 
   return (
@@ -101,7 +119,14 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
         </div>
       </div>
 
-      <div className="time-grid" style={{ "--days": DAY_CONFIGS.length } as GridStyle}>
+      <div
+        ref={gridRef}
+        className="time-grid"
+        style={{ "--days": DAY_CONFIGS.length } as GridStyle}
+        onPointerCancel={endDrag}
+        onPointerMove={handleGridPointerMove}
+        onPointerUp={endDrag}
+      >
         <span />
         {DAY_CONFIGS.map(({ code, name }) => (
           <span className="grid-label day-label" key={code}>
@@ -129,10 +154,10 @@ const TimeGrid = ({ slots, onChange }: TimeGridProps) => {
                   ]
                     .filter(Boolean)
                     .join(" ")}
+                  data-slot={slot}
                   key={slot}
                   type="button"
-                  onMouseDown={() => handleMouseDown(slot)}
-                  onMouseEnter={() => handleMouseEnter(slot)}
+                  onPointerDown={(event) => handleCellPointerDown(event, slot)}
                 />
               );
             })}

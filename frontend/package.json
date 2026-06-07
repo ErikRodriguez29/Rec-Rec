@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
+    "dev:network": "vp dev -- --host",
     "build": "tsc -b && vp build",
     "lint": "vp lint .",
     "preview": "vp preview",
