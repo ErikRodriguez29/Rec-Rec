@@ -11,7 +11,7 @@ const fallbackError: RecommendationFailure = {
   userMessage: "No recommendations matched those preferences. Try widening your filters.",
 };
 
-// Don't worry, it's just a brwoser side cache that stores recent recommendations
+// Don't worry, it's just a browser side cache that stores recent recommendations
 const RECOMMENDATIONS_CACHE_KEY = "rec-rec-recommendations-cache";
 const MAX_CACHED_RECOMMENDATIONS = 8;
 
@@ -145,6 +145,7 @@ const TwoPanelLayout = () => {
                   onColorChange={handleColorRecommendation}
                   onDelete={handleDeleteRecommendation}
                   onRename={handleRenameRecommendation}
+                  onDismissError={() => setError(null)}
                 />
               }
             />
