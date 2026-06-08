@@ -119,12 +119,15 @@ const TwoPanelLayout = () => {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <h1>UCSB Recreation Recommender</h1>
+        <h1 className="app-header__logo">
+          <img src="/logo.png" alt="UCSB Recreation Recommender" />
+        </h1>
         <p>Find the best times to go to the gym based on your preferences and schedule.</p>
         <p>
           {" "}
           View on <a href="https://github.com/ErikRodriguez29/rec-rec">GitHub</a>
         </p>
+        <p style={{ color: "darkred" }}>NOT AFFILIATED WITH UCSB OR UCSB RECREATION</p>
       </header>
 
       <ResultsViewProvider>
