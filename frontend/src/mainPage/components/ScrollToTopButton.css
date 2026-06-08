@@ -1,0 +1,26 @@
+.scroll-to-top {
+  align-items: center;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(51, 65, 85, 0.12);
+  border-radius: 999px;
+  bottom: 24px;
+  box-shadow: 0 8px 22px rgba(30, 35, 30, 0.16);
+  color: #285c70;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  height: 40px;
+  justify-content: center;
+  position: fixed;
+  right: 24px;
+  width: 40px;
+  z-index: 1000;
+}
+
+.scroll-to-top:hover {
+  background: #ffffff;
+  border-color: rgba(51, 65, 85, 0.2);
+}

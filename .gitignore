@@ -16,7 +16,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .env
+.venv/
 *.bak
 src/scripts/raw.json
 /scripts/
 .Rproj.user
+.pnpm-store/

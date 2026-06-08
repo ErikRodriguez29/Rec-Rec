@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum
 
 # All possible error codes that can occur during filtering

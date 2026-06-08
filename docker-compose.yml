@@ -1,0 +1,18 @@
+services:
+  backend:
+    build:
+      context: ./src
+    container_name: rec-rec-backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: rec-rec-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
+    depends_on:
+      - backend

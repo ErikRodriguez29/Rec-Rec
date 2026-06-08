@@ -1,0 +1,1904 @@
+{
+  "current_week": {
+    "by_category": [
+      {
+        "id": "arms",
+        "label": "arms",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "legs",
+        "label": "legs",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cardio",
+        "label": "cardio",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "1:00 PM",
+                "score": 38.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "1:00 PM",
+                "score": 38.0
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "9:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 3",
+                "time_of_day": "9:00 AM",
+                "score": 58.0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "core",
+        "label": "core",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bike machines",
+        "label": "bike machines",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.12
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 57.12
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.56
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 57.12
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.12
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 56.68
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.56
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.12
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 57.12
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "8:00 PM",
+                "score": 36.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "1:00 PM",
+                "score": 36.24
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "9:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "11:00 AM",
+                "score": 56.68
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "badminton",
+        "label": "badminton",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "8:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "7:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "7:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "8:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 2 (East)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "7:00 PM",
+                "score": 37.45
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "8:00 PM",
+                "score": 37.45
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "9:00 AM",
+                "score": 57.45
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "10:00 AM",
+                "score": 56.9
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "weight lifting",
+        "label": "weight lifting",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "climbing",
+        "label": "climbing",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 57.06
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "1:00 PM",
+                "score": 33.28
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "1:00 PM",
+                "score": 33.28
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "2:00 PM",
+                "score": 31.4
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 57.06
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "12:00 PM",
+                "score": 35.17
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "12:00 PM",
+                "score": 33.28
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 57.06
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "12:00 PM",
+                "score": 33.28
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "4:00 PM",
+                "score": 31.4
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "2:00 PM",
+                "score": 30.46
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 54.23
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "1:00 PM",
+                "score": 31.4
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "overall": [
+      {
+        "day": "Monday",
+        "activity_or_category": "bike machines",
+        "type": "activity",
+        "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+        "time_of_day": "7:00 AM"
+      },
+      {
+        "day": "Tuesday",
+        "activity_or_category": "badminton",
+        "type": "activity",
+        "facility_name": "Pavilion Court 1 (West)",
+        "time_of_day": "7:00 AM"
+      },
+      {
+        "day": "Wednesday",
+        "activity_or_category": "cardio",
+        "type": "exercise_category",
+        "facility_name": "Racquetball Court 1",
+        "time_of_day": "6:00 AM"
+      },
+      {
+        "day": "Thursday",
+        "activity_or_category": "climbing",
+        "type": "activity",
+        "facility_name": "Climbing Center - MAC",
+        "time_of_day": "11:00 AM"
+      },
+      {
+        "day": "Friday",
+        "activity_or_category": "weight lifting",
+        "type": "activity",
+        "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "time_of_day": "6:00 AM"
+      },
+      {
+        "day": "Saturday",
+        "activity_or_category": "core",
+        "type": "exercise_category",
+        "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "time_of_day": "8:00 PM"
+      },
+      {
+        "day": "Sunday",
+        "activity_or_category": "legs",
+        "type": "exercise_category",
+        "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "time_of_day": "9:00 AM"
+      }
+    ]
+  },
+  "next_week": {
+    "by_category": [
+      {
+        "id": "arms",
+        "label": "arms",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "legs",
+        "label": "legs",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cardio",
+        "label": "cardio",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "1:00 PM",
+                "score": 38.0
+              },
+              {
+                "facility_name": "Racquetball Court 2",
+                "time_of_day": "1:00 PM",
+                "score": 38.0
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Racquetball Court 1",
+                "time_of_day": "9:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Racquetball Court 3",
+                "time_of_day": "9:00 AM",
+                "score": 58.0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "core",
+        "label": "core",
+        "type": "exercise_category",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bike machines",
+        "label": "bike machines",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.12
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 57.12
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.56
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 57.12
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.12
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 56.68
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.56
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "6:00 AM",
+                "score": 57.12
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "7:00 AM",
+                "score": 57.12
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "8:00 PM",
+                "score": 36.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "1:00 PM",
+                "score": 36.24
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "9:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+                "time_of_day": "11:00 AM",
+                "score": 56.68
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "badminton",
+        "label": "badminton",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "8:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "7:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "7:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "8:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Pavilion Court 2 (East)",
+                "time_of_day": "6:00 AM",
+                "score": 58.0
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "7:00 PM",
+                "score": 37.45
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "8:00 PM",
+                "score": 37.45
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "9:00 AM",
+                "score": 57.45
+              },
+              {
+                "facility_name": "Pavilion Court 1 (West)",
+                "time_of_day": "10:00 AM",
+                "score": 56.9
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "weight lifting",
+        "label": "weight lifting",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.36
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.68
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "6:00 AM",
+                "score": 56.24
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 AM",
+                "score": 55.8
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "8:00 PM",
+                "score": 34.48
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "7:00 PM",
+                "score": 33.6
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "9:00 AM",
+                "score": 54.04
+              },
+              {
+                "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+                "time_of_day": "10:00 AM",
+                "score": 53.6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "climbing",
+        "label": "climbing",
+        "type": "activity",
+        "schedule": [
+          {
+            "day": "Monday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 57.06
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "1:00 PM",
+                "score": 33.28
+              }
+            ]
+          },
+          {
+            "day": "Tuesday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "1:00 PM",
+                "score": 33.28
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "2:00 PM",
+                "score": 31.4
+              }
+            ]
+          },
+          {
+            "day": "Wednesday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 57.06
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "12:00 PM",
+                "score": 35.17
+              }
+            ]
+          },
+          {
+            "day": "Thursday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 58.0
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "12:00 PM",
+                "score": 33.28
+              }
+            ]
+          },
+          {
+            "day": "Friday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 57.06
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "12:00 PM",
+                "score": 33.28
+              }
+            ]
+          },
+          {
+            "day": "Saturday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "4:00 PM",
+                "score": 31.4
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "2:00 PM",
+                "score": 30.46
+              }
+            ]
+          },
+          {
+            "day": "Sunday",
+            "options": [
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "11:00 AM",
+                "score": 54.23
+              },
+              {
+                "facility_name": "Climbing Center - MAC",
+                "time_of_day": "1:00 PM",
+                "score": 31.4
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "overall": [
+      {
+        "day": "Monday",
+        "activity_or_category": "bike machines",
+        "type": "activity",
+        "facility_name": "Outdoor Fitness 2 (Behind Pottery)",
+        "time_of_day": "7:00 AM"
+      },
+      {
+        "day": "Tuesday",
+        "activity_or_category": "badminton",
+        "type": "activity",
+        "facility_name": "Pavilion Court 1 (West)",
+        "time_of_day": "7:00 AM"
+      },
+      {
+        "day": "Wednesday",
+        "activity_or_category": "cardio",
+        "type": "exercise_category",
+        "facility_name": "Racquetball Court 1",
+        "time_of_day": "6:00 AM"
+      },
+      {
+        "day": "Thursday",
+        "activity_or_category": "climbing",
+        "type": "activity",
+        "facility_name": "Climbing Center - MAC",
+        "time_of_day": "11:00 AM"
+      },
+      {
+        "day": "Friday",
+        "activity_or_category": "weight lifting",
+        "type": "activity",
+        "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "time_of_day": "6:00 AM"
+      },
+      {
+        "day": "Saturday",
+        "activity_or_category": "core",
+        "type": "exercise_category",
+        "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "time_of_day": "8:00 PM"
+      },
+      {
+        "day": "Sunday",
+        "activity_or_category": "legs",
+        "type": "exercise_category",
+        "facility_name": "Outdoor Fitness 1 (Turf, Free Weights, Benches)",
+        "time_of_day": "9:00 AM"
+      }
+    ]
+  }
+}

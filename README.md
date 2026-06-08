@@ -1,11 +1,12 @@
-# UCSB Recreation Center Recommender
-
+<p align="center">
+  <img src="frontend/public/logo.png" alt="UCSB Recreation Recommender" width="520">
+</p>
 The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation Center facility occupancy and builds personalized recommended weekly schedules to go to the gym based on user preferred activities, exercise categories, schedule, and facilities. The pipeline does the following:
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
 2. Models and predicts attendance patterns at each facility for the current and next week (`EDA.R`,`Training.R`, `Predictions.R`).
 3. Recommends personalized weekly times to go to the gym that minimizes attendance while respecting user preferences, maximizing the chances of the user finding their preferred machines for their workout routines (`recommend-times.py`).
-4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (in progress).
+4. Presents the user a survey to collect their preferences and displays their recommendations in a frontend website (`frontend/`).
 
 ## Instructions for Setup
 
@@ -83,6 +84,24 @@ Example commands can be found in [`src/scripts/recommender/example_commands.md`]
 
 In `src/scripts/recommender/constants.py`, set `use_hard_coded_load_paths`, `use_hard_coded_save_paths`, and/or `use_hard_coded_recommendations_save_paths` to `True` to pin inputs/outputs to specific paths paths instead of the calendar-derived current/next week.
 
+### Frontend
+
+The frontend is located in the `frontend/` directory. It is built with Vite+ and TypeScript. It uses the `src/output/recommendations/recommendations.json` file as input to display the recommendations.
+
+To run the frontend, run the following from the `frontend/` directory:
+```bash
+pnpm install
+pnpm run dev
+```
+
+### Backend
+
+To run the backend, run the following from the `src/scripts/recommender/` directory:
+```bash
+pip install "fastapi[standard]"
+fastapi dev server.py
+```
+
 ## Project layout
 
 ```
@@ -97,7 +116,7 @@ src/
   scripts/
     R/                   # EDA.R, Training.R, Predictions.R, renv
     facility-counts.py
-    recommender/         # Python recommender modules + recommend-times.py
+    recommender/         # Python recommender modules + recommend-times.py, server.py
 ```
 
 For more details on the scripts, see: [`src/scripts/README.md`](src/scripts/README.md).
