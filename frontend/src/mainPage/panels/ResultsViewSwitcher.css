@@ -95,11 +95,16 @@
   background: linear-gradient(180deg, rgba(242, 247, 248, 0.65), transparent 180px), #ffffff;
 }
 
+.results-tab-body.view-locations {
+  background: linear-gradient(180deg, rgba(238, 246, 248, 0.75), transparent 180px), #ffffff;
+}
+
 .results-tab-body > .recommendations-panel {
   gap: 16px;
 }
 
-.results-tab-body > .facility-forecast-panel {
+.results-tab-body > .facility-forecast-panel,
+.results-tab-body > .facility-location-panel {
   gap: 16px;
 }
 

@@ -4,6 +4,7 @@ import type { CachedRecommendation, RecommendationFailure, UserPreferences } fro
 import PreferencesForm from "./panels/PreferencesForm";
 import RecommendationsPanel from "./panels/RecommendationsPanel";
 import ResultsViewSwitcher from "./panels/ResultsViewSwitcher";
+import { ResultsViewProvider } from "./ResultsViewProvider";
 import "./TwoPanelLayout.css";
 
 const fallbackError: RecommendationFailure = {
@@ -129,29 +130,31 @@ const TwoPanelLayout = () => {
         <p style={{ color: "darkred" }}>NOT AFFILIATED WITH UCSB OR UCSB RECREATION</p>
       </header>
 
-      <section className="panel-layout">
-        <aside className="panel panel--form">
-          <PreferencesForm loading={loading} onSubmit={handleSubmit} />
-        </aside>
+      <ResultsViewProvider>
+        <section className="panel-layout">
+          <aside className="panel panel--form">
+            <PreferencesForm loading={loading} onSubmit={handleSubmit} />
+          </aside>
 
-        <section className="panel--results">
-          <ResultsViewSwitcher
-            recommendationsView={
-              <RecommendationsPanel
-                activeIndex={activeRecommendationIndex}
-                history={recommendationsCache}
-                loading={loading}
-                error={error}
-                onActiveIndexChange={setActiveRecommendationIndex}
-                onColorChange={handleColorRecommendation}
-                onDelete={handleDeleteRecommendation}
-                onRename={handleRenameRecommendation}
-                onDismissError={() => setError(null)}
-              />
-            }
-          />
+          <section className="panel--results">
+            <ResultsViewSwitcher
+              recommendationsView={
+                <RecommendationsPanel
+                  activeIndex={activeRecommendationIndex}
+                  history={recommendationsCache}
+                  loading={loading}
+                  error={error}
+                  onActiveIndexChange={setActiveRecommendationIndex}
+                  onColorChange={handleColorRecommendation}
+                  onDelete={handleDeleteRecommendation}
+                  onRename={handleRenameRecommendation}
+                  onDismissError={() => setError(null)}
+                />
+              }
+            />
+          </section>
         </section>
-      </section>
+      </ResultsViewProvider>
     </main>
   );
 };
