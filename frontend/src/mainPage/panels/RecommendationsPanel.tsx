@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CachedRecommendation, RecommendationFailure } from "../../types";
 import RecommendationCardControls from "../Cards/RecommendationCardControls";
 import RecommendationCardMenu from "../Cards/RecommendationCardMenu";
 import RecommendationWeekView from "../Cards/RecommendationWeekView";
 import RecommendationCalendarExport from "../Cards/RecommendationCalendarExport";
+import { collectRecommendedFacilities, type ChosenTimes } from "../Cards/recommendationSchedule";
+import { useResultsView } from "../useResultsView";
 import "./RecommendationsPanel.css";
 
 interface RecommendationsPanelProps {
@@ -33,11 +35,26 @@ const RecommendationsPanel = ({
   onDismissError,
 }: RecommendationsPanelProps) => {
   const [week, setWeek] = useState<WeekKey>("current");
+  const [chosenTimes, setChosenTimes] = useState<ChosenTimes>(() => new Map());
   const [menuOpen, setMenuOpen] = useState(false);
   const [shuffling, setShuffling] = useState(false);
   const [slideDirection, setSlideDirection] = useState<SlideDirection>(null);
+  const { setHighlightedFacilities } = useResultsView();
 
   const activeItem = history[activeIndex] ?? null;
+
+  useEffect(() => {
+    setChosenTimes(new Map());
+  }, [activeItem?.id]);
+
+  useEffect(() => {
+    if (!activeItem) {
+      setHighlightedFacilities(new Set());
+      return;
+    }
+
+    setHighlightedFacilities(collectRecommendedFacilities(activeItem.result, chosenTimes));
+  }, [activeItem, chosenTimes, setHighlightedFacilities]);
 
   const nextItem = history.length > 1 ? history[(activeIndex + 1) % history.length] : null;
 
@@ -234,6 +251,8 @@ const RecommendationsPanel = ({
                 result={activeItem.result}
                 previewWeek={week}
                 onPreviewWeekChange={setWeek}
+                chosenTimes={chosenTimes}
+                onChosenTimesChange={setChosenTimes}
                 name={activeItem.name}
               />
 
