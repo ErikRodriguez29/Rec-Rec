@@ -58,11 +58,16 @@ if (length(week_numbers) == 0 ||
   )
 }
 
-latest_week <- max(week_numbers)
+forced_week <- Sys.getenv("FORCE_CURRENT_WEEK", unset = "")
+model_week <- if (nzchar(forced_week)) {
+  current_week
+} else {
+  max(week_numbers)
+}
 
 model_path <- file.path(
   model_root,
-  paste0("Week ", latest_week),
+  paste0("Week ", model_week),
   "final_attendance_workflow.rds"
 )
 
@@ -70,7 +75,7 @@ rf_final_fit_train_ts <- readRDS(model_path)
 
 print(paste(
   "Loaded model from Week",
-  latest_week
+  model_week
 ))
 
 

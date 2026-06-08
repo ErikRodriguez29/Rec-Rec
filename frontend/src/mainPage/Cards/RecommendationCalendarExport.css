@@ -42,10 +42,6 @@
   line-height: 1.45;
 }
 
-.recommendation-calendar-header .location-guide-link {
-  margin-top: 8px;
-}
-
 .calendar-export-actions {
   align-items: flex-end;
   display: flex;

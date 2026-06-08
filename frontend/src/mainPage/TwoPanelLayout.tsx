@@ -4,14 +4,13 @@ import type { CachedRecommendation, RecommendationFailure, UserPreferences } fro
 import PreferencesForm from "./panels/PreferencesForm";
 import RecommendationsPanel from "./panels/RecommendationsPanel";
 import ResultsViewSwitcher from "./panels/ResultsViewSwitcher";
-import { ResultsViewProvider } from "./ResultsViewProvider";
 import "./TwoPanelLayout.css";
 
 const fallbackError: RecommendationFailure = {
   userMessage: "No recommendations matched those preferences. Try widening your filters.",
 };
 
-// Don't worry, it's just a browser side cache that stores recent recommendations
+// Don't worry, it's just a brwoser side cache that stores recent recommendations
 const RECOMMENDATIONS_CACHE_KEY = "rec-rec-recommendations-cache";
 const MAX_CACHED_RECOMMENDATIONS = 8;
 
@@ -130,31 +129,29 @@ const TwoPanelLayout = () => {
         <p style={{ color: "darkred" }}>NOT AFFILIATED WITH UCSB OR UCSB RECREATION</p>
       </header>
 
-      <ResultsViewProvider>
-        <section className="panel-layout">
-          <aside className="panel panel--form">
-            <PreferencesForm loading={loading} onSubmit={handleSubmit} />
-          </aside>
+      <section className="panel-layout">
+        <aside className="panel panel--form">
+          <PreferencesForm loading={loading} onSubmit={handleSubmit} />
+        </aside>
 
-          <section className="panel--results">
-            <ResultsViewSwitcher
-              recommendationsView={
-                <RecommendationsPanel
-                  activeIndex={activeRecommendationIndex}
-                  history={recommendationsCache}
-                  loading={loading}
-                  error={error}
-                  onActiveIndexChange={setActiveRecommendationIndex}
-                  onColorChange={handleColorRecommendation}
-                  onDelete={handleDeleteRecommendation}
-                  onRename={handleRenameRecommendation}
-                  onDismissError={() => setError(null)}
-                />
-              }
-            />
-          </section>
+        <section className="panel--results">
+          <ResultsViewSwitcher
+            recommendationsView={
+              <RecommendationsPanel
+                activeIndex={activeRecommendationIndex}
+                history={recommendationsCache}
+                loading={loading}
+                error={error}
+                onActiveIndexChange={setActiveRecommendationIndex}
+                onColorChange={handleColorRecommendation}
+                onDelete={handleDeleteRecommendation}
+                onRename={handleRenameRecommendation}
+                onDismissError={() => setError(null)}
+              />
+            }
+          />
         </section>
-      </ResultsViewProvider>
+      </section>
     </main>
   );
 };

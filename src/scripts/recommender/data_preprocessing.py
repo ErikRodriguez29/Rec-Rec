@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -14,6 +15,10 @@ from constants import (
 
 # Get the current and next week numbers
 def get_current_next_week_numbers():
+    forced = os.environ.get("FORCE_CURRENT_WEEK", "").strip()
+    if forced:
+        current_week = int(forced)
+        return current_week, current_week + 1
     today = datetime.now().date()
     monday = today - timedelta(days=today.weekday())
     current_week = (monday - week1_monday).days // 7 + 1

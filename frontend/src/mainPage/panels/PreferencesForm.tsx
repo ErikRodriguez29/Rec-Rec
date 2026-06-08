@@ -3,7 +3,6 @@ import { Autocomplete, TextField } from "@mui/material";
 import { ACTIVITIES, DAY_CONFIGS, EXERCISE_CATEGORIES, FACILITIES } from "../../constants";
 import type { DayCode, DayHourEntry, SlotState, UserPreferences } from "../../types";
 import { useGoogleCalendarLink } from "../../useGoogleCalendarLink";
-import { useResultsView } from "../useResultsView";
 import GoogleCalendarEventImporter from "../components/GoogleCalendarEventImporter";
 import TimeGrid from "../components/TimeGrid";
 import "./PreferencesForm.css";
@@ -62,6 +61,7 @@ function slotsSummary(slots: Set<string>): string {
 const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
   const [activities, setActivities] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [facilities, setFacilities] = useState<string[]>([]);
   const [slotMap, setSlotMap] = useState<Map<string, SlotState>>(new Map());
   const [rainFilter, setRainFilter] = useState(false);
   const [facilitiesHardFilter, setFacilitiesHardFilter] = useState(false);
@@ -73,7 +73,6 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
     link: linkGoogleCalendar,
     disconnect: disconnectGoogleCalendar,
   } = useGoogleCalendarLink();
-  const { openLocationGuide, preferredFacilities, setPreferredFacilities } = useResultsView();
 
   const preferredSlots = filterSlots(slotMap, "preferred");
   const unavailableSlots = filterSlots(slotMap, "unavailable");
@@ -85,7 +84,7 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
     preferredExerciseCategories: categories,
     preferredDaysHours: slotsToRanges(preferredSlots),
     unavailableDaysHours: slotsToRanges(unavailableSlots),
-    preferredFacilities,
+    preferredFacilities: facilities,
     rainFilter,
     preferredFacilitiesHardFilter: facilitiesHardFilter,
   };
@@ -201,9 +200,9 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
           multiple
           disableCloseOnSelect
           options={FACILITIES}
-          value={preferredFacilities}
+          value={facilities}
           className="preference-autocomplete"
-          onChange={(_, value) => setPreferredFacilities(value)}
+          onChange={(_, value) => setFacilities(value)}
           renderInput={(params) => <TextField {...params} label="Preferred facilities" />}
         />
 
@@ -215,10 +214,6 @@ const PreferencesForm = ({ loading, onSubmit }: PreferencesFormProps) => {
           />
           Only show selected facilities
         </label>
-
-        <button className="location-guide-link" type="button" onClick={openLocationGuide}>
-          Find your preferred locations on the map
-        </button>
       </fieldset>
 
       <fieldset>

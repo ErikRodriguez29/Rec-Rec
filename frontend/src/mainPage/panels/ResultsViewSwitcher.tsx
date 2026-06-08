@@ -1,15 +1,15 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import FacilityForecastCards from "./FacilityForecastCards";
-import FacilityLocationGuidePanel from "./FacilityLocationGuidePanel";
-import { useResultsView } from "../useResultsView";
 import "./ResultsViewSwitcher.css";
+
+type ResultsView = "recommendations" | "forecasts";
 
 interface ResultsViewSwitcherProps {
   recommendationsView: ReactNode;
 }
 
 const ResultsViewSwitcher = ({ recommendationsView }: ResultsViewSwitcherProps) => {
-  const { view, setView } = useResultsView();
+  const [view, setView] = useState<ResultsView>("recommendations");
 
   return (
     <div className="results-tabs-shell">
@@ -28,17 +28,6 @@ const ResultsViewSwitcher = ({ recommendationsView }: ResultsViewSwitcherProps) 
         <button
           type="button"
           role="tab"
-          aria-selected={view === "locations"}
-          className={`results-tab ${view === "locations" ? "active" : ""}`}
-          onClick={() => setView("locations")}
-        >
-          <span>Locations</span>
-          <small>Facility map</small>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
           aria-selected={view === "forecasts"}
           className={`results-tab ${view === "forecasts" ? "active" : ""}`}
           onClick={() => setView("forecasts")}
@@ -49,9 +38,7 @@ const ResultsViewSwitcher = ({ recommendationsView }: ResultsViewSwitcherProps) 
       </div>
 
       <div className={`results-tab-body view-${view}`}>
-        {view === "recommendations" && recommendationsView}
-        {view === "locations" && <FacilityLocationGuidePanel />}
-        {view === "forecasts" && <FacilityForecastCards />}
+        {view === "recommendations" ? recommendationsView : <FacilityForecastCards />}
       </div>
     </div>
   );
