@@ -15,10 +15,14 @@
   margin: 0;
 }
 
-.app-header h1 {
-  color: #285c70;
-  font-size: 1.8rem;
-  line-height: 1.1;
+.app-header__logo {
+  line-height: 0;
+}
+
+.app-header__logo img {
+  display: block;
+  height: 2.5rem;
+  width: auto;
 }
 
 .app-header p {
