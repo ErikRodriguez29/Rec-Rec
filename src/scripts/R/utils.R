@@ -55,13 +55,20 @@ get_week_info <- function(
   week1_start = default_start_date(),
   today_date = Sys.Date()
 ) {
-  current_monday <- today_date -
-    lubridate::wday(today_date, week_start = 1) + 1
   week1_monday <- week1_start -
     lubridate::wday(week1_start, week_start = 1) + 1
-  current_week <- as.integer(
-    difftime(current_monday, week1_monday, units = "weeks")
-  ) + 1
+  forced_week <- Sys.getenv("FORCE_CURRENT_WEEK", unset = "")
+
+  if (nzchar(forced_week)) {
+    current_week <- as.integer(forced_week)
+    current_monday <- week1_monday + lubridate::weeks(current_week - 1L)
+  } else {
+    current_monday <- today_date -
+      lubridate::wday(today_date, week_start = 1) + 1
+    current_week <- as.integer(
+      difftime(current_monday, week1_monday, units = "weeks")
+    ) + 1
+  }
 
   list(
     week1_start = week1_start,
