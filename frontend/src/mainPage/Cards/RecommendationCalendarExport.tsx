@@ -33,7 +33,14 @@ import {
   type GoogleCalendarSummary,
 } from "../../api/googleCalendar";
 import { useGoogleCalendarLink } from "../../useGoogleCalendarLink";
-import { getAlternateTime, getFacilityForTime, getScoreForTime } from "./recommendationSchedule";
+import {
+  getAlternateTime,
+  getFacilityForTime,
+  getScoreForTime,
+  getSlotKey,
+  type ChosenTimes,
+} from "./recommendationSchedule";
+import { useResultsView } from "../useResultsView";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./RecommendationCalendarExport.css";
 
@@ -53,12 +60,12 @@ interface RecommendationCalendarExportProps {
   result: RecommendationResult;
   previewWeek: WeekKey;
   onPreviewWeekChange: (week: WeekKey) => void;
+  chosenTimes: ChosenTimes;
+  onChosenTimesChange: (chosenTimes: ChosenTimes) => void;
   name: string;
 }
 
 const AGENDA_DAY_COUNT = 14;
-
-type ChosenTimes = Map<string, string>;
 
 interface RecommendationCalendarEvent extends CalendarEvent {
   title: string;
@@ -364,9 +371,6 @@ const dateToIcsTuple = (date: Date): [number, number, number, number, number] =>
   date.getMinutes(),
 ];
 
-const getSlotKey = (week: WeekKey, rec: OverallRec) =>
-  `${week}:${rec.day}:${rec.category}:${rec.facility}`;
-
 const buildEventFromRec = (
   rec: OverallRec,
   week: WeekKey,
@@ -534,8 +538,11 @@ const RecommendationCalendarExport = ({
   result,
   previewWeek,
   onPreviewWeekChange,
+  chosenTimes,
+  onChosenTimesChange,
   name,
 }: RecommendationCalendarExportProps) => {
+  const { openLocationGuide } = useResultsView();
   const [calendarView, setCalendarView] = useState<View>("week");
   const [calendarDate, setCalendarDate] = useState(() => getWeekBaseDate(previewWeek));
   const [icsScope, setIcsScope] = useState<DownloadScope>("both");
@@ -550,7 +557,6 @@ const RecommendationCalendarExport = ({
   const [creatingCalendar, setCreatingCalendar] = useState(false);
   const [showNewCalendar, setShowNewCalendar] = useState(false);
   const [newCalendarName, setNewCalendarName] = useState("");
-  const [chosenTimes, setChosenTimes] = useState<ChosenTimes>(() => new Map());
   const {
     linked: googleLinked,
     loading: linkingGoogle,
@@ -656,13 +662,12 @@ const RecommendationCalendarExport = ({
 
   const previewBounds = useMemo(() => buildPreviewBounds(calendarEvents), [calendarEvents]);
 
-  const choosePreferred = useCallback((slotKey: string, time: string) => {
-    setChosenTimes((current) => new Map(current).set(slotKey, time));
-  }, []);
-
-  useEffect(() => {
-    setChosenTimes(new Map());
-  }, [result]);
+  const choosePreferred = useCallback(
+    (slotKey: string, time: string) => {
+      onChosenTimesChange(new Map(chosenTimes).set(slotKey, time));
+    },
+    [chosenTimes, onChosenTimesChange],
+  );
 
   useEffect(() => {
     if (calendarView === "agenda") {
@@ -830,6 +835,9 @@ const RecommendationCalendarExport = ({
           <p className="recommendation-calendar-copy">
             Preview this schedule, download an .ics file, or add events to Google Calendar.
           </p>
+          <button className="location-guide-link" type="button" onClick={openLocationGuide}>
+            Find your recommended facilities on the map
+          </button>
         </div>
 
         <div className="calendar-export-actions">

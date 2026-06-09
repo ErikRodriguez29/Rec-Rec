@@ -1,0 +1,81 @@
+.facility-location-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.facility-location-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.facility-location-copy {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.facility-location-copy a {
+  color: #285c70;
+  font-weight: 700;
+}
+
+.facility-location-subtitle {
+  margin: 4px 0 0;
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.facility-location-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.facility-location-list li {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  margin-left: -10px;
+  border-radius: 8px;
+}
+
+.facility-location-list-item--highlighted {
+  background: #eef6f8;
+}
+
+.facility-location-list-item--selected {
+  background: #c5dde3;
+}
+
+.facility-location-list-title {
+  margin: 0;
+  color: #1e293b;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.facility-location-list-copy {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.facility-location-map-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.facility-location-map-link:hover,
+.facility-location-map-link.active {
+  color: #285c70;
+}
