@@ -1,6 +1,9 @@
 <p align="center">
   <img src="frontend/public/logo.png" alt="UCSB Recreation Recommender" width="520">
 </p>
+[Favicon provided by Wikimedia](https://commons.wikimedia.org/wiki/File:Icons8_flat_sports_mode.svg)
+
+  
 The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation Center facility occupancy and builds personalized recommended weekly schedules to go to the gym based on user preferred activities, exercise categories, schedule, and facilities. The pipeline does the following:
 
 1. Collects live facility counts from [UCSB Recreation live counts](https://recreation.ucsb.edu/facilities/livecount) using `facility-counts.py`.
