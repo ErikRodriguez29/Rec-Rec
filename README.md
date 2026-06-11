@@ -14,7 +14,7 @@ The UCSB Recreation Center Recommender is a pipeline that forecasts Recreation C
 
 ### Data
 
-Place your dataset on `facility_counts.csv` in the `src/data/` folder. A dataset can be retrieved using the python script:
+Place your dataset in `facility_counts.csv` in the `src/data/` folder. A dataset can be retrieved using the python script:
 
 ```bash
 python src/scripts/facility-counts.py
